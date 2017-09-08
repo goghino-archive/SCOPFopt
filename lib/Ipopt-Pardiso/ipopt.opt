@@ -1,0 +1,15 @@
+print_level                  5
+output_file                  all.out
+tol                          1e-6
+dual_inf_tol                 1e-6
+constr_viol_tol              1e-6
+acceptable_tol               1e-6
+max_iter                     1500
+mu_strategy                  monotone
+#mu_strategy                 adaptive
+nlp_scaling_method           none
+obj_scaling_factor           1
+print_options_documentation  no
+#pardiso_matching_strategy complete
+pardiso_matching_strategy complete2x2
+pardiso_msglvl               0
