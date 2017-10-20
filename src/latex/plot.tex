@@ -1,0 +1,49 @@
+\begin{tikzpicture}
+\definecolor{mycolor1}{RGB}{255, 73, 92}
+\definecolor{mycolor2}{RGB}{ 74, 173, 82}
+\definecolor{mycolor3}{RGB}{63, 124, 172}
+\definecolor{mycolor4}{RGB}{ 242, 100, 25}
+\definecolor{mycolor5}{RGB}{216, 151, 60}
+
+\pgfplotstableread{
+ID	NCONT	MYVALUE    MYSTD
+0	1		5.98E+01	1.26E+01
+1	2		3.12E+01	1.25E+01
+2	4		1.72E+01	6.09E-00
+3	8		9.83E+00	9.09E-01
+4	16		6.10E+00	3.78E-01
+5	32		4.62E+00	1.08E-00
+6	64		4.19E+00	7.92E-02
+}\datatable;
+
+  \begin{axis}[name=symb,
+  	width=\columnwidth, height=8cm, 
+  	%ybar,
+	%bar width=5pt, 
+	%ymode=log, 
+	log origin=infty,
+	%ymin=8e-1,
+	ymax=1e2,
+	axis lines*=left, 
+	ymajorgrids, yminorgrids,
+	%xtick=data,
+	xticklabels from table={\datatable}{NCONT},
+	xtick={0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	%xticklabels={16, 32,64,128,256,512,1024,2048,4096,8192,16384},
+	xticklabels={8,16, 32,64,128,256,512,1024,2048,4096,8192,16384},
+	xticklabel style={rotate=0, xshift=-0.0cm, anchor=north, font=\scriptsize},
+	%ytick={0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+	%yticklabels={$10^{-1}$, , , , , , , , $10^0$, , , , , , , , ,$10^1$},
+	yticklabel style={font=\scriptsize},
+	ylabel style={font=\scriptsize},
+	xlabel style={font=\scriptsize},
+	ylabel={Time (s)},
+	xlabel={Number of contingencies},
+    legend style={at={(0.85,1.2)},legend cell align=left,align=right,draw=white!85!black,font=\tiny,legend columns=4}
+	]
+	
+    \addplot[color=mycolor1, mark=triangle, mark options={solid},error bars/.cd, y dir=both, y explicit] table[x=ID, y=MYVALUE, y error=MYSTD] {\datatable}; 
+    \addlegendentry{Total}
+  \end{axis}
+  
+\end{tikzpicture}

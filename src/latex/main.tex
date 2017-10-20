@@ -1,0 +1,22 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+
+%packages and defines for pgfplots
+\usepackage{color}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.10}
+\usetikzlibrary{patterns}
+\usepackage{pgfplotstable}
+\usepackage{csvsimple}
+
+\begin{document}
+
+\begin{figure}[ht!]
+    \input{plot.tex}
+    \caption{Caption \label{fig:label} }
+\end{figure}
+
+\end{document}
