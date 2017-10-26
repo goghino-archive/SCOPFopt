@@ -87,7 +87,8 @@ function self = MyIneq()
     self.p = @(x,dx) generateJac(x)' * dx;
 
     % xhat=h'(x)*dz
-    self.ps = @(x,dz) generateJac(x)' * dz;
+%     self.ps = @(x,dz) generateJac(x)' * dz;
+   self.ps = @(x,dz) generateJac(x,dz);
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
