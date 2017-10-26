@@ -22,7 +22,7 @@ end
 
 function H_dx = hessvec(x, dx)
     % Allocate memory for the dense Hessian in packed storage
-    H = zeros(5);
+    H = zeros(4);
     
     H(1, :) = [2*x(4), x(4), x(4), 2*x(1) + x(2) + x(3)];
     H(2, :) = [x(4),  0,  0, x(1)];
@@ -54,15 +54,15 @@ function self = MyEq()
 
     % xhat=g'(x)*dy
     self.ps = @(x,dy)  [2*x(1)*dy(1);
-                        2*x(2)*dy(2);
-                        2*x(3)*dy(3);
-                        2*x(4)*dy(4)];
+                        2*x(2)*dy(1);
+                        2*x(3)*dy(1);
+                        2*x(4)*dy(1)];
 
     % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) [2*dx(1)*dy(1);
-                           2*dx(2)*dy(2);
-                           2*dx(3)*dy(3);
-                           2*dx(4)*dy(4)]; 
+                           2*dx(2)*dy(1);
+                           2*dx(3)*dy(1);
+                           2*dx(4)*dy(1)]; 
 end
 
 % Define inequalities, and bounds on x
@@ -93,7 +93,7 @@ function self = MyIneq()
     self.p = @(x,dx) generateJac(x)*dx;
 
     % xhat=h'(x)*dz
-    self.ps = @(x,dz) generateJac(x)' * dy;
+    self.ps = @(x,dz) generateJac(x)' * dz;
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
@@ -132,7 +132,7 @@ function main()
     setupOptizelle();
 
     % Generate an initial guess 
-    x = [1; 5; 3; 1];
+    x = [1; 4.9; 3.5; 1.2];
     
     % Allocate memory for the equality multiplier 
     y = [0.];
