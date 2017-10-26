@@ -21,23 +21,14 @@ function self = MyObj()
 end
 
 % Hessian-vector product.
-function H_dx = hessvec(x, dx)
-    % Allocate memory for the dense Hessian in packed storage
-    H = zeros(4);
-    
-    H(1, :) = [2*x(4), x(4), x(4), 2*x(1) + x(2) + x(3)];
-    H(2, :) = [x(4),  0,  0, x(1)];
-    H(3, :) = [x(4),  0,  0, x(1)];
-    H(4, :) = [2*x(1) + x(2) + x(3), x(1), x(1), 0];
+function H_dx = hessvec(x, dx)   
+    H  = [2*x(4), x(4), x(4), 2*x(1) + x(2) + x(3);
+          x(4),  0,  0, x(1);
+          x(4),  0,  0, x(1);
+          2*x(1) + x(2) + x(3), x(1), x(1), 0];
     
     % Compute the Hessian-vector product
-    % REVIEW: can we simply change this to ... H_dx = H*dx ?
-    H_dx = zeros( size(H, 1), 1); 
-    for i = 1:size(H, 1)
-        for j = 1:size(H, 1)
-            H_dx(i) = H_dx(i) + H(i, j)*dx(j);
-        end
-    end
+    H_dx = H * dx;
 end
 
 % Define a simple equality
