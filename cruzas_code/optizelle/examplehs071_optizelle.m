@@ -96,6 +96,7 @@ function self = MyIneq()
     self.ps = @(x,dz) generateJac(x)' * dy;
 
     % xhat=(h''(x)dx)*dz
+    % Since all constraints are affine, we have h''(x) = 0.
     self.pps = @(x,dx,dz) [ 0. ]; 
 end
 
@@ -121,4 +122,44 @@ function jac = generateJac(x)
    jac(3,2) = -1;
    jac(3,3) = -1;
    jac(3,4) = -1;
+end
+
+% Actually runs the program
+function main()
+
+    % Grab the Optizelle library
+    global Optizelle;
+    setupOptizelle();
+
+    % Generate an initial guess 
+    x = [1; 5; 3; 1];
+    
+    % Allocate memory for the equality multiplier 
+    y = [0.];
+
+    % Allocate memory for the inequality multiplier 
+    z = [0.];
+    
+    % Create an optimization state
+    state = Optizelle.Constrained.State.t( ...
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
+
+    % Create a bundle of functions
+    fns = Optizelle.Constrained.Functions.t;
+    fns.f = MyObj();
+    fns.g = MyEq();
+    fns.h = MyIneq();
+
+    % Solve the optimization problem
+    state = Optizelle.Constrained.Algorithms.getMin( ...
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+        fns,state);
+
+    % Print out the reason for convergence
+    fprintf('The algorithm converged due to: %s\n', ...
+        Optizelle.OptimizationStop.to_string(state.opt_stop));
+
+    % Print out the final answer
+    fprintf('The optimal point is: (%e,%e,%e,%e)\n', state.x(1), state.x(2), ...
+                                                     state.x(3), state.x(4));
 end
