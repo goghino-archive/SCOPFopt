@@ -78,7 +78,8 @@ function self = MyIneq()
     self.p = @(x,dx) generateJac(x)' * dx;
 
     % xhat=h'(x)*dz
-    self.ps = @(x,dz) generateJac(x)' * dz;
+%     self.ps = @(x,dz) generateJac(x)' * dz;
+    self.ps = @(x,dz) generateJac(x, dz);
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
@@ -87,6 +88,19 @@ end
 
 % Generate a dense version of the Jacobian.
 function jac = generateJac(x)
+   % Jacobian dimension is: number of constraints by number of variables.
+   jac = [x(2)*x(3)*x(4), x(1)*x(3)*x(4), x(1)*x(2)*x(4), x(1)*x(2)*x(3);
+          1, 0, 0, 0;
+          0, 1, 0, 0;
+          0, 0, 1, 0;
+          0, 0, 0, 1;
+          -1, 0, 0, 0;
+          0, -1, 0, 0;
+          0, 0, -1, 0;
+          0, 0, 0, -1];
+end
+
+function jac = generateJac2(x)
    % Jacobian dimension is: number of constraints by number of variables.
    jac = [x(2)*x(3)*x(4), x(1)*x(3)*x(4), x(1)*x(2)*x(4), x(1)*x(2)*x(3);
           1, 0, 0, 0;
@@ -110,10 +124,10 @@ function main()
     x = [1; 4.9; 3.5; 1.2];
     
     % Allocate memory for the equality multiplier 
-    y = [0.];
+    y = [0];
 
     % Allocate memory for the inequality multiplier 
-    z = [0.];
+    z = zeros(9, 1);
     
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
