@@ -26,13 +26,13 @@ end
 mpc = loadcase('case118');
 
 runExperiment1 = 1;
-runExperiment2 = 1;
+runExperiment2 = 0;
 
 %% Experiment 1.
 if runExperiment1
    %% Settings for experiment 1.
    % Toggle on/off to save plots.
-   savePlots = 1;
+   savePlots = 0;
    % Toggle on/off to save workspace.
    saveWorkspace = 0;
    % Toggle on/off to load workspace.
@@ -42,20 +42,18 @@ if runExperiment1
    
    % Path to save workspace in.
    if untilConvergence
-      if usingIPOPT
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/ipopt_exp1_conv_data.mat'];
+      if usingIpopt
+         workspaceName = ['/Users/samuelcruz/Documents/GitHub/...'...
+         'bachelor-project/workspace/ipopt_exp1_conv_data.mat'];
       elseif usingOptizelle
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/optizelle_exp1_conv_data.mat'];
+         workspaceName = ['/Users/samuelcruz/Documents/GitHub/...'...
+         'bachelor-project/workspace/optizelle_exp1_conv_data.mat'];
       end
    else
-      if usingIPOPT
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/ipopt_exp1_maxiter_data.mat'];
+      if usingIpopt
+         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...bachelor-project/'
+         'workspace/exp1_maxiter_data.mat'];
       elseif usingOptizelle
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/optizelle_exp1_maxiter_data.mat'];
       end
    end
    
@@ -78,11 +76,7 @@ if runExperiment1
    xlabel('No. of contigencies');
    ylabel('Average no. of iterations');
    if savePlots
-      if usingIPOPT
-         print(strcat(pathToSavePlots, 'ipopt_avgIterAndStdVsNumCont'), '-depsc');
-      elseif usingOptizelle
-         print(strcat(pathToSavePlots, 'optizelle_avgIterAndStdVsNumCont'), '-depsc');
-      end
+      print(strcat(pathToSavePlots, 'avgIterAndStdVsNumCont'), '-depsc');
    end
      
    % Plot average time taken vs number of contingencies, with standard
@@ -92,11 +86,7 @@ if runExperiment1
    xlabel('No. of contigencies');
    ylabel('Average time taken (seconds)');
    if savePlots
-      if usingIPOPT
-         print(strcat(pathToSavePlots, 'ipopt_avgTimeAndStdInSecsVsNumCont'), '-depsc');
-      elseif usingOptizelle
-         print(strcat(pathToSavePlots, 'optizelle_avgTimeAndStdInSecsVsNumCont'), '-depsc');
-      end
+      print(strcat(pathToSavePlots, 'avgTimeAndStdInSecsVsNumCont'), '-depsc');
    end
    
    % Plot average time normalized by average number of iterations.
@@ -106,11 +96,7 @@ if runExperiment1
    xlabel('No. of contigencies');
    ylabel('Average time per iteration (seconds)');
    if savePlots
-      if usingIPOPT
-         print(strcat(pathToSavePlots, 'ipopt_avgTimePerIterInSecsVsNumCont'), '-depsc');
-      elseif usingOptizelle
-         print(strcat(pathToSavePlots, 'optizelle_avgTimePerIterInSecsVsNumCont'), '-depsc');
-      end
+      print(strcat(pathToSavePlots, 'avgTimePerIterInSecsVsNumCont'), '-depsc');
    end
 end
 
@@ -120,7 +106,7 @@ if runExperiment2
    % Toggle on/off to save plots.
    savePlots = 1;
    % Toggle on/off to save workspace.
-   saveWorkspace = 0;
+   saveWorkspace = 1;
    % Toggle on/off to load workspace.
    loadWorkspace = 1;
    % Toggle on/off to run until convergence
@@ -128,21 +114,11 @@ if runExperiment2
 
    % Path to save workspace in.
    if untilConvergence
-      if usingIPOPT
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-         'bachelor-project/workspace/ipopt_exp2_conv_data.mat'];
-      elseif usingOptizelle
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-         'bachelor-project/workspace/optizelle_exp2_conv_data.mat'];
-      end
+      workspaceName = ['/Users/samuelcruz/Documents/GitHub/bachelor-project/'...
+      'workspace/exp2_conv_data.mat'];
    else
-      if usingIPOPT
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/ipopt_exp2_maxiter_data.mat'];
-      elseif usingOptizelle
-         workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/optizelle_exp2_maxiter_data.mat'];
-      end
+      workspaceName = ['/Users/samuelcruz/Documents/GitHub/bachelor-project/'...
+      'workspace/exp2_maxiter_data.mat'];
    end
    
    %% Run experiment 2.
@@ -156,10 +132,6 @@ if runExperiment2
    xlabel('-log(tolerance value)');
    ylabel('Average no. of iterations');
    if savePlots
-      if usingIPOPT
-         print(strcat(pathToSavePlots, 'ipopt_avgIterVsTol'), '-depsc');
-      elseif usingOptizelle
-         print(strcat(pathToSavePlots, 'optizelle_avgIterVsTol'), '-depsc');
-      end
+      print(strcat(pathToSavePlots, 'avgIterVsTol'), '-depsc');
    end
 end

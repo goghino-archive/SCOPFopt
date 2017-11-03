@@ -1,4 +1,6 @@
-function optizellescopf_solver(om, model, mpopt)
+function optizellescopf_solver(mpc, contingencies, mpopt)
+%%----- initialization -----
+%% define named indices into data matrices
 [PQ, PV, REF, NONE, BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, ...
     VA, BASE_KV, ZONE, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN] = idx_bus;
 [GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN, ...
@@ -8,5 +10,13 @@ function optizellescopf_solver(om, model, mpopt)
     TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX] = idx_brch;
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
+
+ns = size(d.cont, 1);           %% number of scenarios (nominal + ncont)
+
+% use nominal case to evaluate cost fcn (only pg/qg are relevant)
+idx_nom = d.index.getGlobalIndices(mpc, ns, 0);
+[VAscopf, VMscopf, PGscopf, QGscopf] = d.index.getLocalIndicesSCOPF(mpc);
+
+[f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), d.om)
 
 end
