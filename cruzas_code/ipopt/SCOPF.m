@@ -8,8 +8,10 @@ define_constants;
 
 setenv('OMP_NUM_THREADS', '1')
 
-usingIPOPT = 1;
-usingOptizelle = 0;
+% Can only use one at a time.
+% REVIEW: Change this so that you can run experiments for both at once.
+usingIPOPT = 0;
+usingOptizelle = 1;
 
 % mpopt = mpoption('opf.ac.solver', 'MIPS', 'verbose', 2, 'mips.max_it', 100);
 
@@ -36,7 +38,7 @@ if runExperiment1
    % Toggle on/off to save workspace.
    saveWorkspace = 0;
    % Toggle on/off to load workspace.
-   loadWorkspace = 1;
+   loadWorkspace = 0;
    % Toggle on/off to run until convergence
    untilConvergence = 1;
    
@@ -122,7 +124,7 @@ if runExperiment2
    % Toggle on/off to save workspace.
    saveWorkspace = 0;
    % Toggle on/off to load workspace.
-   loadWorkspace = 1;
+   loadWorkspace = 0;
    % Toggle on/off to run until convergence
    untilConvergence = 1;
 
