@@ -199,28 +199,16 @@ self.hessvec = @(x, dx) myD2fEval(x, idx_nom, VAscopf,...
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
 
-   function df = myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+   function grad = myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+      
+      grad = zeros(size(x,1),1);
+      grad(idx_nom(PGscopf)) = df(PGopf); % nonzero only nominal case Pg
    end
 
    function d2f = myD2fEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
-end
-
-function grad = gradient(x, d)
-mpc = get_mpc(d.om);
-ns = size(d.cont, 1);           %% number of scenarios (nominal + ncont)
-
-%evaluate grad of nominal case
-idx_nom = d.index.getGlobalIndices(mpc, ns, 0);
-[VAscopf, VMscopf, PGscopf, QGscopf] = d.index.getLocalIndicesSCOPF(mpc);
-[VAopf, VMopf, PGopf, QGopf] = d.index.getLocalIndicesOPF(mpc);
-
-[f, df] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), d.om);
-
-grad = zeros(size(x,1),1);
-grad(idx_nom(PGscopf)) = df(PGopf); %nonzero only nominal case Pg
 end
 
 function constr = constraints(x, d)
