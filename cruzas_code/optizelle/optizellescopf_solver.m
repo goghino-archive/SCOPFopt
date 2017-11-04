@@ -172,6 +172,13 @@ state = Optizelle.Constrained.State.t( ...
 % Create a bundle of functions
 fns = Optizelle.Constrained.Functions.t;
 fns.f = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
+% TODO: Define equality and inequality constraint functions.
+% fns.g = MyEq();
+% fns.h = MyIneq();
+
+state = Optizelle.Constrained.Algorithms.getMin( ...
+   Optizelle.Rm, Optizelle.Rm, Optizelle.Rm, Optizelle.Messaging.stdout, ...
+   fns,state);
 
 % TODO: Figure out exactly what to return in results, success, and raw.
 % TODO: in raw, make sure you put the time taken by the algorithm.
@@ -181,9 +188,9 @@ success = 0;
 raw.output.alg = 0;
 end
 
-% Define objective function.
+%% Define objective function.
 function self = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
-%% Main definitions.
+% Main definitions.
 % Evaluation
 self.eval = @(x) myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
 
@@ -194,7 +201,7 @@ self.grad = @(x) myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
 self.hessvec = @(x, dx) myD2fEval(x, idx_nom, VAscopf,...
    VMscopf, PGscopf, QGscopf, om) * dx;
 
-   %% Helper functions..
+% Helper functions..
    function f = myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
@@ -210,6 +217,23 @@ self.hessvec = @(x, dx) myD2fEval(x, idx_nom, VAscopf,...
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
 end
+
+%% Define equality constraints.
+function self = MyEq()
+%
+%     % y=g(x)
+%     self.eval = @(x) sum(x.^2) - 40;
+%
+%     % y=g'(x)dx
+%     self.p = @(x,dx) [2*x(1), 2*x(2), 2*x(3), 2*x(4)] * dx;
+%
+%     % xhat=g'(x)*dy
+%     self.ps = @(x,dy)  [2*x(1); 2*x(2); 2*x(3); 2*x(4)] .* dy;
+%
+%     % xhat=(g''(x)dx)*dy
+%     self.pps = @(x,dx,dy) [2*dx(1); 2*dx(2); 2*dx(3); 2*dx(4)] .* dy;
+end
+
 
 function constr = constraints(x, d)
 mpc = get_mpc(d.om);
@@ -271,62 +295,4 @@ for i = 0:ns-1
       dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)])];
 end
 J = [J; d.A]; %append Jacobian of linear constraints
-end
-
-function H = hessian(x, sigma, lambda, d)
-mpc = get_mpc(d.om);
-nb = size(mpc.bus, 1);          %% number of buses
-ng = size(mpc.gen, 1);          %% number of gens
-nl = size(mpc.branch, 1);       %% number of branches
-ns = size(d.cont, 1);           %% number of scenarios (nominal + ncont)
-NCONSTR = 2*nb + 2*nl;
-
-H = sparse(size(x,1), size(x,1));
-
-% get indices of REF gen and PV bus
-[REFgen_idx, nREFgen_idx] = d.index.getREFgens(mpc);
-[PVbus_idx, nPVbus_idx] = d.index.getXbuses(mpc,2);%2==PV
-
-[VAscopf, VMscopf, PGscopf, QGscopf] = d.index.getLocalIndicesSCOPF(mpc);
-[VAopf, VMopf, PGopf, QGopf] = d.index.getLocalIndicesOPF(mpc);
-
-for i = 0:ns-1
-   %compute local indices and its parts
-   idx = d.index.getGlobalIndices(mpc, ns, i);
-   
-   cont = d.cont(i+1);
-   [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
-   
-   lam.eqnonlin   = lambda(i*NCONSTR + (1:2*nb));
-   lam.ineqnonlin = lambda(i*NCONSTR + 2*nb + (1:2*nl));
-   H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, d.om, Ybus, Yf, Yt, d.mpopt, d.il);
-   
-   % H_ll (PG_ref relevant only in nominal case, added to global part)
-   H(idx([VAscopf VMscopf(nPVbus_idx) QGscopf]), idx([VAscopf VMscopf(nPVbus_idx) QGscopf])) =...
-      H_local([VAopf VMopf(nPVbus_idx) QGopf], [VAopf VMopf(nPVbus_idx) QGopf]);
-   
-   % H_lg and H_gl (PG parts are implicitly zero, could leave them out)
-   H(idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)]), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = ...
-      H_local([VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)], [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
-   H(idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)]), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = ...
-      H_local([VMopf(PVbus_idx) PGopf(nREFgen_idx)], [VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
-   
-   % H_gg hessian w.r.t global variables (and PG_ref_0)
-   if i == 0
-      % H_pg at non-reference gens, these are global variables
-      H(idx([PGscopf(nREFgen_idx)]), idx([PGscopf(nREFgen_idx)])) = ...
-         H_local([PGopf(nREFgen_idx)], [PGopf(nREFgen_idx)]);
-      
-      % H_pgref is local variable for nominal scenario, but used in f()
-      H(idx([PGscopf(REFgen_idx)]), idx([PGscopf(REFgen_idx)])) = ...
-         H_local([PGopf(REFgen_idx)], [PGopf(REFgen_idx)]);
-   end
-   
-   %each scenario contributes to hessian w.r.t global VM variables at PV buses
-   H(idx([VMscopf(PVbus_idx)]), idx([VMscopf(PVbus_idx)])) = ...
-      H(idx([VMscopf(PVbus_idx)]), idx([VMscopf(PVbus_idx)])) + ...
-      H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
-end
-
-H = tril(H);
 end
