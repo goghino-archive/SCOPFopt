@@ -139,6 +139,10 @@ Cb_nominal = Cl' * Cl + speye(nb);              %% for each bus - contains adjac
 Cl2_nominal = Cl(il, :);                        %% branches with active flow limit
 Cg = sparse(gen(:, GEN_BUS), (1:ng)', 1, nb, ng); %%locations where each gen. resides
 
+% Define variable bounds.
+options.lb = xmin;
+options.ub = xmax;
+
 idx_nom = model.index.getGlobalIndices(mpc, ns, 0); %evaluate cost of nominal case (only Pg/Qg are relevant)
 
 %pack some additional info to output so that we can verify the solution
@@ -150,13 +154,10 @@ meta.Yt = Yt;
 global Optizelle;
 setupOptizelle();
 
+% Initial guess.
 x = x0;
-
-% Allocate memory for the equality multiplier
-y = [0];
-
-% Allocate memory for the inequality multiplier
-z = zeros(9, 1);
+% TODO: must have equality and inequality multipliers when we consider
+% constraints.
 
 myauxdata.idx_nom = idx_nom;
 myauxdata.model = model;
@@ -179,16 +180,19 @@ state = Optizelle.Unconstrained.Algorithms.getMin( ...
 fprintf('The algorithm converged due to: %s\n', ...
    Optizelle.OptimizationStop.to_string(state.opt_stop));
 
-% Print out the final answer
-disp('The optimal point is:')
-state.x
+% Pack some additional info to output so that we can verify the solution.
+meta.Ybus = Ybus;
+meta.Yf = Yf;
+meta.Yt = Yt;
+meta.lb = options.lb;
+meta.ub = options.ub;
 
 % TODO: Figure out exactly what to return in results, success, and raw.
 % TODO: in raw, make sure you put the time taken by the algorithm.
 % Check line 389 of ipoptscopf_solver.
-results.x = state.x;
-success = 0;
-raw.output.alg = 0;
+raw = struct('meta', meta);
+results = struct('x', state.x);
+success = 1;
 end
 
 %% Define objective function.
