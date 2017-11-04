@@ -16,7 +16,7 @@ function [results, success, raw] = optizellescopf_solver(om, model, mpopt)
 %
 %   Outputs are a RESULTS struct, SUCCESS flag and RAW output struct.
 %
-%   The internal x that ipopt works with has structure
+%   The internal x that Optizelle works with has structure
 %   [Va1 Vm1 Qg1 Pg_ref1... VaN VmN QgN Pg_refN] [Vm Pg] for all contingency scenarios 1..N
 %   with corresponding bounds xmin < x < xmax
 %
@@ -63,7 +63,6 @@ mpc = get_mpc(om);
 
 cont = model.cont;
 
-
 %% problem dimensions
 nb = size(bus, 1);          %% number of buses
 ng = size(gen, 1);          %% number of gens
@@ -83,7 +82,7 @@ ns = size(cont, 1);         %% number of scenarios (nominal + ncont)
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);
 
 %% bounds on optimization vars xmin <= x <= xmax
-[x0, xmin, xmax] = getv(om); %returns standard OPF form [Va Vm Pg Qg]
+[x0, xmin, xmax] = getv(om); % returns standard OPF form [Va Vm Pg Qg]
 
 % add small pertubation to UB so that we prevent ipopt removing variables
 % for which LB=UB, except the Va of the reference bus
@@ -141,37 +140,13 @@ Cl2_nominal = Cl(il, :);                        %% branches with active flow lim
 Cg = sparse(gen(:, GEN_BUS), (1:ng)', 1, nb, ng); %%locations where each gen. resides
 
 %% assign function handles
-funcs.objective         = @objective;
+funcs.objective         = @MyObj;
 funcs.gradient          = @gradient;
 funcs.constraints       = @constraints;
 funcs.jacobian          = @jacobian;
 funcs.hessian           = @hessian;
 
 idx_nom = model.index.getGlobalIndices(mpc, ns, 0); %evaluate cost of nominal case (only Pg/Qg are relevant)
-
-% %% update solution data for nominal senario and global vars
-% Va = x(vv.i1.Va:vv.iN.Va);
-% Vm = x(vv.i1.Vm:vv.iN.Vm);
-% Pg = x(ns*2*nb + (1:ng));
-% Qg = x(ns*2*nb + ng + (1:ng));
-% V = Vm .* exp(1j*Va);
-%
-% %%-----  calculate return values  -----
-% %% update voltages & generator outputs
-% bus(:, VA) = Va * 180/pi;
-% bus(:, VM) = Vm;
-% gen(:, PG) = Pg * baseMVA;
-% gen(:, QG) = Qg * baseMVA;
-% gen(:, VG) = Vm(gen(:, GEN_BUS));
-%
-% %% compute branch flows
-% [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);
-% Sf = V(branch(:, F_BUS)) .* conj(Yf * V);  %% cplx pwr at "from" bus, p.u.
-% St = V(branch(:, T_BUS)) .* conj(Yt * V);  %% cplx pwr at "to" bus, p.u.
-% branch(:, PF) = real(Sf) * baseMVA;
-% branch(:, QF) = imag(Sf) * baseMVA;
-% branch(:, PT) = real(St) * baseMVA;
-% branch(:, QT) = imag(St) * baseMVA;
 
 %pack some additional info to output so that we can verify the solution
 meta.Ybus = Ybus;
@@ -182,8 +157,7 @@ meta.Yt = Yt;
 global Optizelle;
 setupOptizelle();
 
-% Generate an initial guess
-x = [1; 4.9; 3.5; 1.2];
+x = x0;
 
 % Allocate memory for the equality multiplier
 y = [0];
@@ -193,21 +167,43 @@ z = zeros(9, 1);
 
 % Create an optimization state
 state = Optizelle.Constrained.State.t( ...
-   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
+   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm, x, y, z);
 
 % Create a bundle of functions
 fns = Optizelle.Constrained.Functions.t;
+fns.f = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
+
+% TODO: Figure out exactly what to return in results, success, and raw.
+% TODO: in raw, make sure you put the time taken by the algorithm.
+% Check line 389 of ipoptscopf_solver.
+results.x = 0;
+success = 0;
+raw.output.alg = 0;
 end
 
-function f = objective(x, d)
-mpc = get_mpc(d.om);
-ns = size(d.cont, 1);           %% number of scenarios (nominal + ncont)
+% Define objective function.
+function self = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+% Evaluation
+self.eval = @(x) myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
 
-% use nominal case to evaluate cost fcn (only pg/qg are relevant)
-idx_nom = d.index.getGlobalIndices(mpc, ns, 0);
-[VAscopf, VMscopf, PGscopf, QGscopf] = d.index.getLocalIndicesSCOPF(mpc);
+% Gradient
+self.grad = @(x) myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
 
-f = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), d.om);
+% Hessian-vector product
+self.hessvec = @(x, dx) myD2fEval(x, idx_nom, VAscopf,...
+   VMscopf, PGscopf, QGscopf, om) * dx;
+
+   function f = myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+      [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+   end
+
+   function df = myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+      [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+   end
+
+   function d2f = myD2fEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+      [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+   end
 end
 
 function grad = gradient(x, d)
