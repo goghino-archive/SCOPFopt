@@ -139,13 +139,6 @@ Cb_nominal = Cl' * Cl + speye(nb);              %% for each bus - contains adjac
 Cl2_nominal = Cl(il, :);                        %% branches with active flow limit
 Cg = sparse(gen(:, GEN_BUS), (1:ng)', 1, nb, ng); %%locations where each gen. resides
 
-%% assign function handles
-funcs.objective         = @MyObj;
-funcs.gradient          = @gradient;
-funcs.constraints       = @constraints;
-funcs.jacobian          = @jacobian;
-funcs.hessian           = @hessian;
-
 idx_nom = model.index.getGlobalIndices(mpc, ns, 0); %evaluate cost of nominal case (only Pg/Qg are relevant)
 
 %pack some additional info to output so that we can verify the solution
@@ -165,56 +158,99 @@ y = [0];
 % Allocate memory for the inequality multiplier
 z = zeros(9, 1);
 
+myauxdata.idx_nom = idx_nom;
+myauxdata.model = model;
+myauxdata.om = om;
+myauxdata.mpc = mpc;
+
 % Create an optimization state
-state = Optizelle.Constrained.State.t( ...
-   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm, x, y, z);
+state = Optizelle.Unconstrained.State.t(Optizelle.Rm, x);
 
 % Create a bundle of functions
-fns = Optizelle.Constrained.Functions.t;
-fns.f = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
-% TODO: Define equality and inequality constraint functions.
-% fns.g = MyEq();
-% fns.h = MyIneq();
+fns = Optizelle.Unconstrained.Functions.t;
+fns.f = MyObj(myauxdata);
 
-state = Optizelle.Constrained.Algorithms.getMin( ...
-   Optizelle.Rm, Optizelle.Rm, Optizelle.Rm, Optizelle.Messaging.stdout, ...
-   fns,state);
+% Solve the optimization problem
+state = Optizelle.Unconstrained.Algorithms.getMin( ...
+   Optizelle.Rm, Optizelle.Messaging.stdout, ...
+   fns, state);
+
+% Print out the reason for convergence
+fprintf('The algorithm converged due to: %s\n', ...
+   Optizelle.OptimizationStop.to_string(state.opt_stop));
+
+% Print out the final answer
+disp('The optimal point is:')
+state.x
 
 % TODO: Figure out exactly what to return in results, success, and raw.
 % TODO: in raw, make sure you put the time taken by the algorithm.
 % Check line 389 of ipoptscopf_solver.
-results.x = 0;
+results.x = state.x;
 success = 0;
 raw.output.alg = 0;
 end
 
 %% Define objective function.
-function self = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+function self = MyObj(myauxdata)
 % Evaluation
-self.eval = @(x) myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
+self.eval = @(x) myFEval(x, myauxdata);
 
 % Gradient
-self.grad = @(x) myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
+self.grad = @(x) myDfEval(x, myauxdata);
 
 % Hessian-vector product
-self.hessvec = @(x, dx) myD2fEval(x, idx_nom, VAscopf,...
-   VMscopf, PGscopf, QGscopf, om) * dx;
+self.hessvec = @(x, dx) myD2fEval(x, myauxdata) * dx;
 
 
-   % Helper functions.
-   function f = myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
-      [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+% Helper functions.
+   function f = myFEval(x, myauxdata)
+      % Extract data.
+      idx_nom = myauxdata.idx_nom;
+      model = myauxdata.model;
+      om = myauxdata.om;
+      mpc = myauxdata.mpc;
+      
+      % Indices of local OPF solution vector x = [VA VM PG QG].
+      [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
+      
+      f = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
 
-   function grad = myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+   function grad = myDfEval(x, myauxdata)
+      % Extract data.
+      idx_nom = myauxdata.idx_nom;
+      model = myauxdata.model;
+      om = myauxdata.om;
+      mpc = myauxdata.mpc;
+      
+      % Indices of local OPF solution vector x = [VA VM PG QG].
+      [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
+      [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
+      
+      [f, df] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+      
+      % Nonzero only nominal case Pg.
+      grad = zeros(size(x,1),1);
+      grad(idx_nom(PGscopf)) = df(PGopf);
+   end
+
+   function hess = myD2fEval(x, myauxdata)
+      % Extract data.
+      idx_nom = myauxdata.idx_nom;
+      model = myauxdata.model;
+      om = myauxdata.om;
+      mpc = myauxdata.mpc;
+      
+      % Indices of local OPF solution vector x = [VA VM PG QG].
+      [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
+      [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
+      
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
       
-      grad = zeros(size(x,1),1);
-      grad(idx_nom(PGscopf)) = df(PGopf); % nonzero only nominal case Pg
-   end
-
-   function d2f = myD2fEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
-      [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
+      % Nonzero only nominal case Pg.
+      hess = sparse(size(x,1),size(x,1));
+      hess(idx_nom(PGscopf), idx_nom(PGscopf)) = d2f(PGopf, PGopf);
    end
 
 
