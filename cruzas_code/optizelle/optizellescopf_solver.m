@@ -183,6 +183,7 @@ end
 
 % Define objective function.
 function self = MyObj(idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
+%% Main definitions.
 % Evaluation
 self.eval = @(x) myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
 
@@ -193,6 +194,7 @@ self.grad = @(x) myDfEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om);
 self.hessvec = @(x, dx) myD2fEval(x, idx_nom, VAscopf,...
    VMscopf, PGscopf, QGscopf, om) * dx;
 
+   %% Helper functions..
    function f = myFEval(x, idx_nom, VAscopf, VMscopf, PGscopf, QGscopf, om)
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
