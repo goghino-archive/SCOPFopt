@@ -172,8 +172,9 @@ fns.g = MyEq(myauxdata);
 
 % tic
 % Solve the optimization problem
-state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-   Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
+state = Optizelle.Unconstrained.Algorithms.getMin( ...
+   Optizelle.Rm, Optizelle.Messaging.stdout, ...
+   fns, state);
 % toc
 
 % Print out the reason for convergence
@@ -272,20 +273,17 @@ self.ps = @(x,dy) MyDgEeval(x, myauxdata) .* dy;
 self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
 
 % Helper functions.
-   function g = MyGEval(x, myauxdata)
-      % Extract data.
+   function MyGEval(x, myauxdata)
       om = myauxdata.om;
       mpc = myauxdata.mpc;
-      model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       il = myauxdata.il;
-      
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(om.cont, 1);     %% number of scenarios (nominal + ncont)
       NCONSTR = 2*nb + 2*nl;
       
-      g = zeros(ns*(NCONSTR), 1);
+      constr = zeros(ns*(NCONSTR), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
@@ -294,28 +292,25 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
          idx = model.index.getGlobalIndices(mpc, ns, i);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
-         g(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
+         constr(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
       end
       
       if ~isempty(om.A)
-         g = [g; om.A*x]; %append linear constraints
+         constr = [constr; om.A*x]; %append linear constraints
       end
    end
 
-   function grad = MyDgEval(x, myauxdata)
-      % Extract data.
+   function MyDgEval(x, myauxdata)
       om = myauxdata.om;
       mpc = myauxdata.mpc;
-      model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       il = myauxdata.il;
-      
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(om.cont, 1);     %% number of scenarios (nominal + ncont)
       NCONSTR = 2*nb + 2*nl;
       
-      grad = zeros(ns*(NCONSTR), 1);
+      constr = zeros(ns*(NCONSTR), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
@@ -324,47 +319,40 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
          idx = model.index.getGlobalIndices(mpc, ns, i);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local, dh, dg] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
-         grad(i*(NCONSTR) + (1:NCONSTR)) = dg;
+         constr(i*(NCONSTR) + (1:NCONSTR)) = dg;
       end
       
       if ~isempty(om.A)
-         grad = [grad; om.A*x]; %append linear constraints
+         constr = [constr; om.A*x]; %append linear constraints
       end
    end
 
-   function hess = MyD2gEval(x, myauxdata)
-      % Extract data.
-      il = myauxdata.il;
-      om = myauxdata.om;
+   function MyD2gEval(x, myauxdata)
       mpc = myauxdata.mpc;
-      model = myauxdata.model;
-      mpopt = myauxdata.mpopt;
-      
       nb = size(mpc.bus, 1);          %% number of buses
       nl = size(mpc.branch, 1);       %% number of branches
       ns = size(d.cont, 1);           %% number of scenarios (nominal + ncont)
+      NCONSTR = 2*nb + 2*nl;
       
       H = sparse(size(x,1), size(x,1));
       
       % get indices of REF gen and PV bus
-      [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
-      [PVbus_idx, nPVbus_idx] = model.index.getXbuses(mpc,2);%2==PV
+      [REFgen_idx, nREFgen_idx] = d.index.getREFgens(mpc);
+      [PVbus_idx, nPVbus_idx] = d.index.getXbuses(mpc,2);%2==PV
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = d.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = d.index.getLocalIndicesOPF(mpc);
       
-      lam.eqnonlin   = ones(2*nb, 1);
-      lam.ineqnonlin = zeros(2*nl, 1);
-      sigma = 0;
-      
       for i = 0:ns-1
          %compute local indices and its parts
-         idx = model.index.getGlobalIndices(mpc, ns, i);
+         idx = d.index.getGlobalIndices(mpc, ns, i);
          
-         cont = om.cont(i+1);
+         cont = d.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
-         H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
+         lam.eqnonlin   = lambda(i*NCONSTR + (1:2*nb));
+         lam.ineqnonlin = la;
+         H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, d.om, Ybus, Yf, Yt, d.mpopt, d.il);
          
          % H_ll (PG_ref relevant only in nominal case, added to global part)
          H(idx([VAscopf VMscopf(nPVbus_idx) QGscopf]), idx([VAscopf VMscopf(nPVbus_idx) QGscopf])) =...
@@ -393,7 +381,7 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
       end
       
-      hess = tril(H);
+      H = tril(H);
    end
 end
 
