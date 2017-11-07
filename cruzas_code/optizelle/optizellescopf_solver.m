@@ -279,8 +279,8 @@ self.ps = @(x,dy) MyDgEval(x, myauxdata)' * dy;
 % self.ps = @(x,dy) 0;
 
 % xhat=(g''(x)dx)*dy
-self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
-% self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
+% self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
+self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
 % self.pps = @(x,dx,dy) 0;
 
    function bs = bs(x, A, dy)
