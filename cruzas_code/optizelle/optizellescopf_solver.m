@@ -129,6 +129,11 @@ if size(il_, 1) ~= nl2
    error('Not all branches have specified RATE_A field.');
 end
 
+% Build linear constraints l <= A*x <= u.
+A = [];
+l = [];
+u = [];
+
 % Define variable bounds.
 options.lb = xmin;
 options.ub = xmax;
@@ -158,6 +163,7 @@ myauxdata.om = om;
 myauxdata.mpc = mpc;
 myauxdata.il = il;
 myauxdata.mpopt = mpopt;
+myauxdata.A = A;
 
 % Allocate memory for the equality multiplier
 y = [0.];
@@ -266,7 +272,7 @@ self.eval = @(x) MyGEval(x, myauxdata);
 self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
 
 % xhat=g'(x)*dy
-self.ps = @(x,dy) MyDgEeval(x, myauxdata) .* dy;
+self.ps = @(x,dy) MyDgEval(x, myauxdata) .* dy;
 
 % xhat=(g''(x)dx)*dy
 self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
@@ -282,7 +288,7 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
-      ns = size(om.cont, 1);     %% number of scenarios (nominal + ncont)
+      ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       NCONSTR = 2*nb + 2*nl;
       
       g = zeros(ns*(NCONSTR), 1);
@@ -296,10 +302,6 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          g(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
       end
-      
-      if ~isempty(om.A)
-         g = [g; om.A*x]; %append linear constraints
-      end
    end
 
    function grad = MyDgEval(x, myauxdata)
@@ -311,24 +313,22 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
       il = myauxdata.il;
       
       nb = size(mpc.bus, 1);     %% number of buses
-      nl = size(mpc.branch, 1);  %% number of branches
-      ns = size(om.cont, 1);     %% number of scenarios (nominal + ncont)
-      NCONSTR = 2*nb + 2*nl;
+      ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
+      NCONSTR = 2*nb;
       
-      grad = zeros(ns*(NCONSTR), 1);
-      
+      grad = zeros(ns*(NCONSTR), length(x));
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
       for i = 0:ns-1
-         cont = om.cont(i+1);
+         cont = model.cont(i+1);
          idx = model.index.getGlobalIndices(mpc, ns, i);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local, dh, dg] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
-         grad(i*(NCONSTR) + (1:NCONSTR)) = dg;
-      end
-      
-      if ~isempty(om.A)
-         grad = [grad; om.A*x]; %append linear constraints
+         
+         % Transpose since opf_consfcn transposes the Jacobian. 
+         dg = dg';
+         
+         grad(i*(NCONSTR) + (1:NCONSTR), i*(length(x)) + (1:length(x))) = dg;
       end
    end
 
@@ -342,7 +342,7 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
       
       nb = size(mpc.bus, 1);          %% number of buses
       nl = size(mpc.branch, 1);       %% number of branches
-      ns = size(d.cont, 1);           %% number of scenarios (nominal + ncont)
+      ns = size(model.cont, 1);           %% number of scenarios (nominal + ncont)
       
       H = sparse(size(x,1), size(x,1));
       
