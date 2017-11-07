@@ -269,13 +269,16 @@ function self = MyEq(myauxdata)
 self.eval = @(x) MyGEval(x, myauxdata);
 
 % y=g'(x)dx
-self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
+% self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
+self.p = @(x,dx) 0;
 
 % xhat=g'(x)*dy
-self.ps = @(x,dy) MyDgEval(x, myauxdata) .* dy;
+% self.ps = @(x,dy) MyDgEval(x, myauxdata) .* dy;
+self.ps = @(x,dy) 0;
 
 % xhat=(g''(x)dx)*dy
-self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
+% self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
+self.pps = @(x,dx,dy) 0;
 
 % Helper functions.
    function g = MyGEval(x, myauxdata)
@@ -289,17 +292,18 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
-      NCONSTR = 2*nb + 2*nl;
+      NCONSTR = 2*nb;
       
       g = zeros(ns*(NCONSTR), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
       for i = 0:ns-1
-         cont = om.cont(i+1);
+         cont = model.cont(i+1);
          idx = model.index.getGlobalIndices(mpc, ns, i);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
+         
          g(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
       end
    end
