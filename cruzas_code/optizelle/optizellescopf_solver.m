@@ -267,18 +267,26 @@ function self = MyEq(myauxdata)
 
 % y=g(x)
 self.eval = @(x) MyGEval(x, myauxdata);
+% self.eval = @(x) 0;
 
 % y=g'(x)dx
-% self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
-self.p = @(x,dx) 0;
+self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
+% self.p = @(x,dx) 0;
 
 % xhat=g'(x)*dy
+self.ps = @(x,dy) bs(x, MyDgEval(x, myauxdata), dy);
 % self.ps = @(x,dy) MyDgEval(x, myauxdata) .* dy;
-self.ps = @(x,dy) 0;
+% self.ps = @(x,dy) 0;
 
 % xhat=(g''(x)dx)*dy
 % self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
 self.pps = @(x,dx,dy) 0;
+
+   function bs = bs(x, A, dy)
+%       size(x)
+      size(A .* dy)
+      bs = 0;
+   end
 
 % Helper functions.
    function g = MyGEval(x, myauxdata)
