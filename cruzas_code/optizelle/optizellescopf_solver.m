@@ -274,17 +274,19 @@ self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
 % self.p = @(x,dx) 0;
 
 % xhat=g'(x)*dy
-self.ps = @(x,dy) bs(x, MyDgEval(x, myauxdata), dy);
-% self.ps = @(x,dy) MyDgEval(x, myauxdata) .* dy;
+% self.ps = @(x,dy) bs(x, MyDgEval(x, myauxdata), dy);
+self.ps = @(x,dy) MyDgEval(x, myauxdata)' * dy;
 % self.ps = @(x,dy) 0;
 
 % xhat=(g''(x)dx)*dy
-% self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) .* dx) * dy;
-self.pps = @(x,dx,dy) 0;
+self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
+% self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
+% self.pps = @(x,dx,dy) 0;
 
    function bs = bs(x, A, dy)
-%       size(x)
-      size(A .* dy)
+      size_x = size(x)
+      size_A = size(A)
+      size_dy = size(dy)
       bs = 0;
    end
 
@@ -362,8 +364,8 @@ self.pps = @(x,dx,dy) 0;
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
       [PVbus_idx, nPVbus_idx] = model.index.getXbuses(mpc,2);%2==PV
       
-      [VAscopf, VMscopf, PGscopf, QGscopf] = d.index.getLocalIndicesSCOPF(mpc);
-      [VAopf, VMopf, PGopf, QGopf] = d.index.getLocalIndicesOPF(mpc);
+      [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
+      [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
       lam.eqnonlin   = ones(2*nb, 1);
       lam.ineqnonlin = zeros(2*nl, 1);
@@ -373,7 +375,7 @@ self.pps = @(x,dx,dy) 0;
          %compute local indices and its parts
          idx = model.index.getGlobalIndices(mpc, ns, i);
          
-         cont = om.cont(i+1);
+         cont = model.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
@@ -405,7 +407,8 @@ self.pps = @(x,dx,dy) 0;
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
       end
       
-      hess = tril(H);
+      hess = H;
+      size_hess = size(hess)
    end
 end
 

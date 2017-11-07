@@ -25,7 +25,8 @@ elseif usingOptizelle
 end
 
 % load MATPOWER case struct, see help caseformat
-mpc = loadcase('case118');
+mpc = loadcase('case9');
+% mpc = loadcase('case118');
 
 runExperiment1 = 1;
 runExperiment2 = 1;
