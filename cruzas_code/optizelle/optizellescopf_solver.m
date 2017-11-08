@@ -277,8 +277,8 @@ self.p = @(x,dx) jacobian(x, myauxdata) * dx;
 self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
 
 % xhat=(g''(x)dx)*dy
-self.pps = @(x, dx, dy) bs(x, (hessian(x, myauxdata) * dx)', dy);
-% self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
+% self.pps = @(x, dx, dy) bs(x, (hessian(x, myauxdata) * dx)', dy);
+self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
 
    function bs = bs(x, A, dy)
       size_x = size(x)
