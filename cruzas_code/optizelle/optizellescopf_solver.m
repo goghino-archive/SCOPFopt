@@ -200,17 +200,17 @@ end
 %% Define objective function.
 function self = MyObj(myauxdata)
 % Evaluation
-self.eval = @(x) myFEval(x, myauxdata);
+self.eval = @(x) objective(x, myauxdata);
 
 % Gradient
-self.grad = @(x) myDfEval(x, myauxdata);
+self.grad = @(x) gradient(x, myauxdata);
 
 % Hessian-vector product
-self.hessvec = @(x, dx) myD2fEval(x, myauxdata) * dx;
+self.hessvec = @(x, dx) hessian(x, myauxdata) * dx;
 
 
 % Helper functions.
-   function f = myFEval(x, myauxdata)
+   function f = objective(x, myauxdata)
       % Extract data.
       idx_nom = myauxdata.idx_nom;
       model = myauxdata.model;
@@ -223,7 +223,7 @@ self.hessvec = @(x, dx) myD2fEval(x, myauxdata) * dx;
       f = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
    end
 
-   function grad = myDfEval(x, myauxdata)
+   function grad = gradient(x, myauxdata)
       % Extract data.
       idx_nom = myauxdata.idx_nom;
       model = myauxdata.model;
@@ -241,7 +241,7 @@ self.hessvec = @(x, dx) myD2fEval(x, myauxdata) * dx;
       grad(idx_nom(PGscopf)) = df(PGopf);
    end
 
-   function hess = myD2fEval(x, myauxdata)
+   function H = hessian(x, myauxdata)
       % Extract data.
       idx_nom = myauxdata.idx_nom;
       model = myauxdata.model;
@@ -255,8 +255,8 @@ self.hessvec = @(x, dx) myD2fEval(x, myauxdata) * dx;
       [f, df, d2f] = opf_costfcn(x(idx_nom([VAscopf VMscopf PGscopf QGscopf])), om);
       
       % Nonzero only nominal case Pg.
-      hess = sparse(size(x,1),size(x,1));
-      hess(idx_nom(PGscopf), idx_nom(PGscopf)) = d2f(PGopf, PGopf);
+      H = sparse(size(x,1),size(x,1));
+      H(idx_nom(PGscopf), idx_nom(PGscopf)) = d2f(PGopf, PGopf);
    end
 
 
