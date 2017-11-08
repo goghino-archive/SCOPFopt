@@ -271,15 +271,7 @@ self.p = @(x,dx) jacobian(x, myauxdata) * dx;
 self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
 
 % xhat=(g''(x)dx)*dy
-% self.pps = @(x, dx, dy) bs(x, (hessian(x, myauxdata) * dx)', dy);
 self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
-
-   function bs = bs(x, A, dy)
-      size_x = size(x)
-      size_A = size(A)
-      size_dy = size(dy)
-      bs = 0;
-   end
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -293,9 +285,9 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(model.cont, 1);  %% number of scenarios (nominal + ncont)
-      NCONSTR = 2*nb; 
+      NEQ = 2*nb; % number of equality constraints.
       
-      constr = zeros(ns*(NCONSTR), 1);
+      constr = zeros(ns*(NEQ), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
@@ -305,7 +297,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         constr(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
+         constr(i*(NEQ) + (1:NEQ)) = gn_local;
       end
    end
 
@@ -319,9 +311,9 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       
       nb = size(mpc.bus, 1);     %% number of buses
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
-      NCONSTR = 2*nb;
+      NEQ = 2*nb; % number of equality constraints
       
-      J = sparse(ns*(NCONSTR), size(x,1));
+      J = sparse(ns*(NEQ), size(x,1));
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
@@ -341,12 +333,12 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          dgn = dgn';
          
          %jacobian wrt local variables
-         J(i*NCONSTR + (1:NCONSTR), ...
+         J(i*NEQ + (1:NEQ), ...
             idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) =...
             dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
-      
+         
          %jacobian wrt global variables
-         J(i*NCONSTR + (1:NCONSTR), ...
+         J(i*NEQ + (1:NEQ), ...
             idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) =...
             dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
       end
@@ -364,7 +356,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       nl = size(mpc.branch, 1);       %% number of branches
       ns = size(model.cont, 1);           %% number of scenarios (nominal + ncont)
       
-      NCONSTR = ns * 2 * nb;
+      NEQ = 2*nb;
       
       H = sparse(size(x,1), size(x,1));
       
@@ -385,7 +377,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          cont = model.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
-         lam.eqnonlin = dy(i*NCONSTR + (1:NCONSTR), 1);
+         lam.eqnonlin = dy(i*NEQ + (1:NEQ), 1);
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
          % H_ll (PG_ref relevant only in nominal case, added to global part)
@@ -417,3 +409,21 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
    end
 end
 
+%% Define inequalities.
+function self = MyIneq(myauxdata)
+% z=h(x)
+self.eval = @(x) [
+   2.*x(1)+x(2)-1];
+
+% z=h'(x)dx
+self.p = @(x,dx) [
+   2.*dx(1)+dx(2)];
+
+% xhat=h'(x)*dz
+self.ps = @(x,dz) [
+   2.*dz(1)
+   dz(1)];
+
+% xhat=(h''(x)dx)*dz
+self.pps = @(x,dx,dz) [ 0. ];
+end
