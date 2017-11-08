@@ -266,22 +266,19 @@ end
 function self = MyEq(myauxdata)
 
 % y=g(x)
-self.eval = @(x) MyGEval(x, myauxdata);
+self.eval = @(x) constraints(x, myauxdata);
 % self.eval = @(x) 0;
 
 % y=g'(x)dx
-self.p = @(x,dx) MyDgEval(x, myauxdata) * dx;
+self.p = @(x,dx) jacobian(x, myauxdata) * dx;
 % self.p = @(x,dx) 0;
 
 % xhat=g'(x)*dy
-% self.ps = @(x,dy) bs(x, MyDgEval(x, myauxdata), dy);
-self.ps = @(x,dy) MyDgEval(x, myauxdata)' * dy;
-% self.ps = @(x,dy) 0;
+self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
 
 % xhat=(g''(x)dx)*dy
-self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
+self.pps = @(x, dx, dy) bs(x, (hessian(x, myauxdata) * dx)', dy);
 % self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
-% self.pps = @(x,dx,dy) 0;
 
    function bs = bs(x, A, dy)
       size_x = size(x)
@@ -291,7 +288,7 @@ self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
    end
 
 % Helper functions.
-   function g = MyGEval(x, myauxdata)
+   function constr = constraints(x, myauxdata)
       % Extract data.
       om = myauxdata.om;
       mpc = myauxdata.mpc;
@@ -304,7 +301,7 @@ self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       NCONSTR = 2*nb;
       
-      g = zeros(ns*(NCONSTR), 1);
+      constr = zeros(ns*(NCONSTR), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
@@ -314,11 +311,11 @@ self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         g(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
+         constr(i*(NCONSTR) + (1:NCONSTR)) = gn_local;
       end
    end
 
-   function J = MyDgEval(x, myauxdata)
+   function J = jacobian(x, myauxdata)
       % Extract data.
       om = myauxdata.om;
       mpc = myauxdata.mpc;
@@ -361,7 +358,7 @@ self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
       end
    end
 
-   function hess = MyD2gEval(x, myauxdata)
+   function H = hessian(x, myauxdata)
       % Extract data.
       il = myauxdata.il;
       om = myauxdata.om;
@@ -422,8 +419,7 @@ self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
       end
       
-      hess = H;
-      size_hess = size(hess)
+      size_hess = size(H)
    end
 end
 
