@@ -279,8 +279,8 @@ self.ps = @(x,dy) MyDgEval(x, myauxdata)' * dy;
 % self.ps = @(x,dy) 0;
 
 % xhat=(g''(x)dx)*dy
-% self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
-self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
+self.pps = @(x, dx, dy) bs(x, (MyD2gEval(x, myauxdata) * dx)', dy);
+% self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
 % self.pps = @(x,dx,dy) 0;
 
    function bs = bs(x, A, dy)
@@ -318,7 +318,7 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
       end
    end
 
-   function grad = MyDgEval(x, myauxdata)
+   function J = MyDgEval(x, myauxdata)
       % Extract data.
       om = myauxdata.om;
       mpc = myauxdata.mpc;
@@ -330,19 +330,34 @@ self.pps = @(x,dx,dy) (MyD2gEval(x, myauxdata) * dx)' * dy;
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       NCONSTR = 2*nb;
       
-      grad = zeros(ns*(NCONSTR), length(x));
+      J = zeros(ns*(NCONSTR), size(x,1));
+      
+      % get indices of REF gen and PV bus
+      [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
+      [PVbus_idx, nPVbus_idx] = model.index.getXbuses(mpc,2);%2==PV
+      
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
+      [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
       for i = 0:ns-1
-         cont = model.cont(i+1);
          idx = model.index.getGlobalIndices(mpc, ns, i);
+         
+         cont = model.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
-         [hn_local, gn_local, dh, dg] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
+         [hn, gn, dhn, dgn] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         % Transpose since opf_consfcn transposes the Jacobian. 
-         dg = dg';
+         % Transpose since opf_consfcn returns dgn', dhn'. 
+         dgn = dgn';
          
-         grad(i*(NCONSTR) + (1:NCONSTR), i*(length(x)) + (1:length(x))) = dg;
+         %jacobian wrt local variables
+         J(i*NCONSTR + (1:NCONSTR), ...
+            idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) =...
+            dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
+      
+         %jacobian wrt global variables
+         J(i*NCONSTR + (1:NCONSTR), ...
+            idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) =...
+            dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
       end
    end
 
