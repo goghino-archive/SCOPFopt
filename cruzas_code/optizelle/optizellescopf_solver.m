@@ -129,11 +129,6 @@ if size(il_, 1) ~= nl2
    error('Not all branches have specified RATE_A field.');
 end
 
-% Build linear constraints l <= A*x <= u.
-A = [];
-l = [];
-u = [];
-
 % Define variable bounds.
 options.lb = xmin;
 options.ub = xmax;
@@ -163,10 +158,9 @@ myauxdata.om = om;
 myauxdata.mpc = mpc;
 myauxdata.il = il;
 myauxdata.mpopt = mpopt;
-myauxdata.A = A;
 
 % Allocate memory for the equality multiplier
-y = [0.];
+y = zeros(ns*2*nb, 1);
 
 % Create an optimization state
 state = Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y);
@@ -278,7 +272,7 @@ self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
 
 % xhat=(g''(x)dx)*dy
 % self.pps = @(x, dx, dy) bs(x, (hessian(x, myauxdata) * dx)', dy);
-self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
+self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
 
    function bs = bs(x, A, dy)
       size_x = size(x)
@@ -298,8 +292,8 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
-      ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
-      NCONSTR = 2*nb;
+      ns = size(model.cont, 1);  %% number of scenarios (nominal + ncont)
+      NCONSTR = 2*nb; 
       
       constr = zeros(ns*(NCONSTR), 1);
       
@@ -327,7 +321,7 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       NCONSTR = 2*nb;
       
-      J = zeros(ns*(NCONSTR), size(x,1));
+      J = sparse(ns*(NCONSTR), size(x,1));
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
@@ -343,7 +337,7 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn, gn, dhn, dgn] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         % Transpose since opf_consfcn returns dgn', dhn'. 
+         % Transpose since opf_consfcn returns dgn'.
          dgn = dgn';
          
          %jacobian wrt local variables
@@ -358,7 +352,7 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
       end
    end
 
-   function H = hessian(x, myauxdata)
+   function H = hessian(x, myauxdata, dy)
       % Extract data.
       il = myauxdata.il;
       om = myauxdata.om;
@@ -370,6 +364,8 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
       nl = size(mpc.branch, 1);       %% number of branches
       ns = size(model.cont, 1);           %% number of scenarios (nominal + ncont)
       
+      NCONSTR = ns * 2 * nb;
+      
       H = sparse(size(x,1), size(x,1));
       
       % get indices of REF gen and PV bus
@@ -379,7 +375,6 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
-      lam.eqnonlin   = ones(2*nb, 1);
       lam.ineqnonlin = zeros(2*nl, 1);
       sigma = 0;
       
@@ -390,6 +385,7 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
          cont = model.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
+         lam.eqnonlin = dy(i*NCONSTR + (1:NCONSTR), 1);
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
          % H_ll (PG_ref relevant only in nominal case, added to global part)
@@ -418,8 +414,6 @@ self.pps = @(x,dx,dy) (hessian(x, myauxdata) * dx) * dy;
             H(idx([VMscopf(PVbus_idx)]), idx([VMscopf(PVbus_idx)])) + ...
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
       end
-      
-      size_hess = size(H)
    end
 end
 
