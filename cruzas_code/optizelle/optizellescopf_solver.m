@@ -426,15 +426,23 @@ self.eval = @(x) constraints(x, myauxdata);
 
 % z=h'(x)dx
 self.p = @(x,dx) jacobian(x, myauxdata) * dx;
-% self.p = @(x,dx) 0;
+% self.p = @(x,dx) bs(x, jacobian(x, myauxdata), dx);
 
 % xhat=h'(x)*dz
-% self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
+self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
 % self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
 % self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
 self.pps = @(x,dx,dz) 0;
+
+   function res = bs(x, A, dx)
+%       size(x)
+%       size(A)
+%       size(dx)
+      size(A*dx)
+      res = 0;
+   end
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -489,6 +497,9 @@ self.pps = @(x,dx,dz) 0;
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
+      Id = eye(length(x));
+      neg_Id = -Id;
+      
       for i = 0:ns-1
          idx = model.index.getGlobalIndices(mpc, ns, i);
          
@@ -500,13 +511,20 @@ self.pps = @(x,dx,dz) 0;
          dhn = dhn';
          
          %jacobian wrt local variables
-         J(i*NINEQ_nmm + (1:NINEQ_nmm), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = ...
+         J(i*NINEQ + (1:NINEQ_nmm), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = ...
             dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
          %jacobian wrt global variables
-         J(i*NINEQ_nmm + (1:NINEQ_nmm), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = ...
+         J(i*NINEQ + (1:NINEQ_nmm), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = ...
             dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
          
-         J = [J ; sparse(eye(length(x))); sparse(-eye(length(x)))];
+         xmin_row_indices = NINEQ_nmm+1 : NINEQ_nmm+length(x);
+         xmax_row_indices = NINEQ_nmm+length(x)+1 : NINEQ;
+         
+         % Append Jacobian for x >= xmin.
+         J(i*NINEQ + (xmin_row_indices), :) = Id;
+         
+         % Append Jacobian for x <= xmax.
+         J(i*NINEQ + (xmax_row_indices), :) = neg_Id;
       end
    end
 
