@@ -420,7 +420,6 @@ end
 function self = MyIneq(myauxdata)
 % z=h(x)
 self.eval = @(x) constraints(x, myauxdata);
-% self.eval = @(x) 0;
 
 % z=h'(x)dx
 self.p = @(x,dx) jacobian(x, myauxdata) * dx;
@@ -428,17 +427,17 @@ self.p = @(x,dx) jacobian(x, myauxdata) * dx;
 
 % xhat=h'(x)*dz
 self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
-% self.ps = @(x,dz) 0;
+% self.ps = @(x,dz) bs(x, jacobian(x, myauxdata)', dz);
 
 % xhat=(h''(x)dx)*dz
 self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
-% self.pps = @(x,dx,dz) 0;
 
+   % Function for checking dimensions.
    function res = bs(x, A, dx)
-%       size(x)
-%       size(A)
-%       size(dx)
-      size(A*dx)
+      x_size = size(x)
+      A_size = size(A)
+      dx_size = size(dx)
+      Adx_size = size(A*dx)
       res = 0;
    end
 
@@ -527,7 +526,6 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
    end
 
    function H = hessian(x, myauxdata, dz)
-      size_dz = size(dz)
       % Extract data.
       il = myauxdata.il;
       om = myauxdata.om;
