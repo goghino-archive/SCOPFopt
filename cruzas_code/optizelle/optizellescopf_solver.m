@@ -161,11 +161,15 @@ myauxdata.mpopt = mpopt;
 myauxdata.xmin = xmin;
 myauxdata.xmax = xmax;
 
+
+NEQ = 2*nb; % number of equality constraints
+NINEQ = 2*nl + 2*length(x); % number of inequality constraints
+
 % Allocate memory for the equality multiplier
-y = zeros(ns*2*nb, 1);
+y = zeros(ns*NEQ, 1);
 
 % Allocate memory for the inequality multiplier
-z = zeros(ns*2*nl + 2*length(x), 1);
+z = zeros(ns*NINEQ, 1);
 
 % Create an optimization state
 state = Optizelle.Constrained.State.t( ...
@@ -423,16 +427,16 @@ self.eval = @(x) constraints(x, myauxdata);
 % self.eval = @(x) 0;
 
 % z=h'(x)dx
-self.p = @(x,dx) jacobian(x, myauxdata) * dx;
-% self.p = @(x,dx) 0;
+% self.p = @(x,dx) jacobian(x, myauxdata) * dx;
+self.p = @(x,dx) 0;
 
 % xhat=h'(x)*dz
-self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
-% self.ps = @(x,dz) 0;
+% self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
+self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
-self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
-% self.pps = @(x,dx,dz) 0;
+% self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
+self.pps = @(x,dx,dz) 0;
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
