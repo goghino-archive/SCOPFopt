@@ -158,12 +158,14 @@ myauxdata.om = om;
 myauxdata.mpc = mpc;
 myauxdata.il = il;
 myauxdata.mpopt = mpopt;
+myauxdata.xmin = xmin;
+myauxdata.xmax = xmax;
 
 % Allocate memory for the equality multiplier
 y = zeros(ns*2*nb, 1);
 
 % Allocate memory for the inequality multiplier
-z = zeros(ns*2*nl, 1);
+z = zeros(ns*2*nl + 2*length(x), 1);
 
 % Create an optimization state
 state = Optizelle.Constrained.State.t( ...
@@ -418,15 +420,19 @@ end
 function self = MyIneq(myauxdata)
 % z=h(x)
 self.eval = @(x) constraints(x, myauxdata);
+% self.eval = @(x) 0;
 
 % z=h'(x)dx
 self.p = @(x,dx) jacobian(x, myauxdata) * dx;
+% self.p = @(x,dx) 0;
 
 % xhat=h'(x)*dz
 self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
+% self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
 self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
+% self.pps = @(x,dx,dz) 0;
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -439,7 +445,7 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
       
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(model.cont, 1);  %% number of scenarios (nominal + ncont)
-      NINEQ = 2*nl; % number of inequality constraints.
+      NINEQ = 2*nl + 2*length(x); % number of inequality constraints.
       
       constr = zeros(ns*(NINEQ), 1);
       
@@ -451,7 +457,9 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         constr(i*(NINEQ) + (1:NINEQ)) = hn_local;
+         constr(i*(NINEQ) + (1:NINEQ)) = [hn_local; ...
+                                          x >= myauxdata.xmin; ...
+                                          -myauxdata.xmax];
       end
    end
 
@@ -466,7 +474,7 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
-      NINEQ = 2*nl; % number of inequality constraints
+      NINEQ = 2*nl + 2*length(x); % number of inequality constraints
       
       J = sparse(ns*(NINEQ), size(x,1));
       
@@ -489,10 +497,14 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
          
          %jacobian wrt local variables
          J(i*NINEQ + (1:NINEQ), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = ...
-            dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
+            [dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);...
+            sparse(eye(length(x)));...
+            sparse(-eye(length(x)))];
          %jacobian wrt global variables
          J(i*NINEQ + (1:NINEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = ...
-            dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
+            [dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
+            sparse(eye(length(x)));...
+            sparse(-eye(length(x)))];
       end
    end
 
@@ -508,7 +520,7 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
       nl = size(mpc.branch, 1);       %% number of branches
       ns = size(model.cont, 1);           %% number of scenarios (nominal + ncont)
       
-      NINEQ = 2*nl;
+      NINEQ = 2*nl + 2*length(x);
       
       H = sparse(size(x,1), size(x,1));
       
@@ -558,5 +570,13 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
             H(idx([VMscopf(PVbus_idx)]), idx([VMscopf(PVbus_idx)])) + ...
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
       end
+      
+%       % Append the Hesssian matrix for x >= xmin.
+%       H_xmin = sparse(zeros(length(x)));
+%       H = [H; H_xmin];
+%       
+%       % Append the Hesssian matrix for -x >= -xmax.
+%       H_xmax = sparse(zeros(length(x)));
+%       H = [H; H_xmax];
    end
 end
