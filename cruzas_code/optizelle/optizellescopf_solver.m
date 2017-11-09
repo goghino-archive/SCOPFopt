@@ -466,7 +466,7 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
          
          constr(i*(NINEQ) + (1:NINEQ)) = [hn_local; ...
                                           x >= myauxdata.xmin; ...
-                                          -myauxdata.xmax];
+                                          -x >= -myauxdata.xmax];
       end
    end
 
@@ -494,7 +494,7 @@ self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
-      Id = eye(length(x));
+      Id = sparse(eye(length(x)));
       neg_Id = -Id;
       
       for i = 0:ns-1
