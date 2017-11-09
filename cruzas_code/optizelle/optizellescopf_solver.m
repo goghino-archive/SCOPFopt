@@ -271,11 +271,9 @@ function self = MyEq(myauxdata)
 
 % y=g(x)
 self.eval = @(x) constraints(x, myauxdata);
-% self.eval = @(x) 0;
 
 % y=g'(x)dx
 self.p = @(x,dx) jacobian(x, myauxdata) * dx;
-% self.p = @(x,dx) 0;
 
 % xhat=g'(x)*dy
 self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
@@ -433,8 +431,8 @@ self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
 % self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
-% self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
-self.pps = @(x,dx,dz) 0;
+self.pps = @(x,dx,dz) hessian(x, myauxdata, dz) * dx;
+% self.pps = @(x,dx,dz) 0;
 
    function res = bs(x, A, dx)
 %       size(x)
