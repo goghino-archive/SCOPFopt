@@ -114,7 +114,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
       % REVIEW: is this correct?
-      lam.ineqnonlin = zeros(NEQ, 1);
+      lam.ineqnonlin = zeros(2*nl, 1);
       sigma = 0;
       
       for i = 0:ns-1
@@ -125,7 +125,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
          % REVIEW: is this correct?
-         lam.eqnonlin = dy(i*NEQ + (1:NEQ), 1);
+         lam.eqnonlin = dy(i*2*nb + (1:2*nb), 1);
          
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
