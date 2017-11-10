@@ -10,16 +10,21 @@ self.p = @(x,dx) bs(x, jacobian(x, myauxdata), dx);
 
 % xhat=g'(x)*dy
 % self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
-self.ps = @(x,dy) bs(x, jacobian(x, myauxdata), dy);
+% self.ps = @(x,dy) bs(x, jacobian(x, myauxdata)', dy);
+self.ps = @(x,dy) 0;
 
 % xhat=(g''(x)dx)*dy
 % self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
 self.pps = @(x,dx,dy) 0;
 
    function res = bs(a, A, b)
+      
+      if 1
       size_a = size(a)
       size_A = size(A)
       size_b = size(b)
+      size_Ab = size(A*b)
+      end
       
       res = 0;
    end
@@ -72,6 +77,7 @@ self.pps = @(x,dx,dy) 0;
       nb = size(mpc.bus, 1);     %% number of buses
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
+      x_size = size(x)
       J = sparse(ns*(NEQ + NINEQ), size(x,1) + NINEQ);
       
       % get indices of REF gen and PV bus
