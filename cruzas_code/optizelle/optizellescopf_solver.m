@@ -153,6 +153,19 @@ x = x0;
 NEQ = 2*nb; % number of equality constraints
 NINEQ = 2*nl; % number of inequality constraints
 
+% Slack variable(s)
+s = zeros(ns*2*nl, 1); 
+% Bounds on slack variable(s) smin <= s <= smax
+smin = zeros(ns*2*nl, 1); 
+smax = inf(ns*2*nl, 1);
+
+% Append slack variable(s) to initial guess.
+x = [x; s];
+
+% Append bounds on slack variable(s).
+xmin = [xmin; smin];
+xmax = [xmax; smax];
+
 myauxdata.idx_nom = idx_nom;
 myauxdata.model = model;
 myauxdata.om = om;
