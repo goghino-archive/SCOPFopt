@@ -150,9 +150,6 @@ setupOptizelle();
 % Initial guess.
 x = x0;
 
-NEQ = 2*nb + 2*nl; % number of equality constraints
-NINEQ = 2*length(x); % number of inequality constraints
-
 % Slack variable(s)
 s = zeros(ns * 2*nl, 1);
 % Bounds on slack variable(s) smin <= s <= smax
@@ -165,6 +162,9 @@ x = [x; s];
 % Append bounds on slack variable(s).
 xmin = [xmin; smin];
 xmax = [xmax; smax];
+
+NEQ = 2*nb + 2*nl; % number of equality constraints
+NINEQ = length(x); % number of inequality constraints
 
 myauxdata.idx_nom = idx_nom;
 myauxdata.model = model;
@@ -185,19 +185,19 @@ y = zeros(ns*NEQ, 1);
 z = zeros(ns*NINEQ, 1);
 
 % Create an optimization state
-state = Optizelle.EqualityConstrained.State.t( ...
-   Optizelle.Rm,Optizelle.Rm,x,y);
+state = Optizelle.Constrained.State.t( ...
+   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
 
 % Create a bundle of functions
-fns = Optizelle.EqualityConstrained.Functions.t;
+fns = Optizelle.Constrained.Functions.t;
 fns.f = MyObj(myauxdata);
 fns.g = MyEq(myauxdata);
-% fns.h = MyIneq(myauxdata);
+fns.h = MyIneq(myauxdata);
 
 % Solve the optimization problem
 % tic
-state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-   Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+state = Optizelle.Constrained.Algorithms.getMin( ...
+   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
    fns,state);
 % toc
 

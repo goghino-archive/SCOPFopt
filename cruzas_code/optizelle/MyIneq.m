@@ -43,6 +43,8 @@ self.pps = @(x,dx,dz) 0;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
+         size(hn_local)
+         
          constr(i*(NINEQ) + (1:NINEQ)) = hn_local;
       end
       
