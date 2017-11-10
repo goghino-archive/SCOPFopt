@@ -5,13 +5,24 @@ function self = MyEq(myauxdata)
 self.eval = @(x) constraints(x, myauxdata);
 
 % y=g'(x)dx
-self.p = @(x,dx) jacobian(x, myauxdata) * dx;
+% self.p = @(x,dx) jacobian(x, myauxdata) * dx;
+self.p = @(x,dx) bs(x, jacobian(x, myauxdata), dx);
 
 % xhat=g'(x)*dy
-self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
+% self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
+self.ps = @(x,dy) bs(x, jacobian(x, myauxdata), dy);
 
 % xhat=(g''(x)dx)*dy
-self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
+% self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
+self.pps = @(x,dx,dy) 0;
+
+   function res = bs(a, A, b)
+      size_a = size(a)
+      size_A = size(A)
+      size_b = size(b)
+      
+      res = 0;
+   end
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -23,13 +34,13 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       il = myauxdata.il;
       lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
-      NINEQ = myauxdata.NINEQ;
+      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(model.cont, 1);  %% number of scenarios (nominal + ncont)
       
-      constr = zeros(ns*(NEQ), 1);
+      constr = zeros(ns*(NEQ + NINEQ), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
@@ -56,11 +67,12 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       mpopt = myauxdata.mpopt;
       il = myauxdata.il;
       NEQ = myauxdata.NEQ; % number of equality constraints.
+      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
       
       nb = size(mpc.bus, 1);     %% number of buses
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
-      J = sparse(ns*(NEQ), size(x,1));
+      J = sparse(ns*(NEQ + NINEQ), size(x,1) + NINEQ);
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
