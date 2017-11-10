@@ -176,6 +176,7 @@ myauxdata.xmin = xmin;
 myauxdata.xmax = xmax;
 myauxdata.NEQ = NEQ;
 myauxdata.NINEQ = NINEQ;
+myauxdata.lenx_no_s = length(x0); % length of x without slack variables.
 
 % Allocate memory for the equality multiplier
 y = zeros(ns*NEQ, 1);
@@ -193,8 +194,8 @@ fns.f = MyObj(myauxdata);
 fns.g = MyEq(myauxdata);
 fns.h = MyIneq(myauxdata);
 
-% tic
 % Solve the optimization problem
+% tic
 state = Optizelle.Constrained.Algorithms.getMin( ...
    Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
    fns,state);

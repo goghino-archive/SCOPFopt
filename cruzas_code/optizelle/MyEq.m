@@ -21,7 +21,9 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       il = myauxdata.il;
+      lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
+      NINEQ = myauxdata.NINEQ;
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
@@ -34,12 +36,15 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       for i = 0:ns-1
          cont = model.cont(i+1);
          idx = model.index.getGlobalIndices(mpc, ns, i);
+         
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         % s should be slack vars from x.
-%          constr(i*(NEQ) + (1:NEQ)) = [gn_local; hn - s]
-         constr(i*(NEQ) + (1:NEQ)) = gn_local;
+         % Extract slack variable(s) s from x.
+         s = x(lenx_no_s+1 : end);
+         
+         constr(i*(NEQ + NINEQ) + (1:NEQ)) = gn_local;
+         constr(i*(NEQ + NINEQ) + (NEQ+1:NEQ+NINEQ)) = hn_local - s;
       end
    end
 
