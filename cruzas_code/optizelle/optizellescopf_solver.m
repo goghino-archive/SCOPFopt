@@ -150,14 +150,14 @@ setupOptizelle();
 % Initial guess.
 x = x0;
 
-NEQ = 2*nb; % number of equality constraints
-NINEQ = 2*nl; % number of inequality constraints
+NEQ = 2*nb + 2*nl; % number of equality constraints
+NINEQ = 2*length(x); % number of inequality constraints
 
 % Slack variable(s)
-s = zeros(ns * NINEQ, 1); 
+s = zeros(ns * 2*nl, 1);
 % Bounds on slack variable(s) smin <= s <= smax
-smin = zeros(ns * NINEQ, 1); 
-smax = inf(ns * NINEQ, 1);
+smin = zeros(ns * 2*nl, 1);
+smax = inf(ns * 2*nl, 1);
 
 % Append slack variable(s) to initial guess.
 x = [x; s];
@@ -179,13 +179,14 @@ myauxdata.NINEQ = NINEQ;
 myauxdata.lenx_no_s = length(x0); % length of x without slack variables.
 
 % Allocate memory for the equality multiplier
-y = zeros(ns*(NEQ + NINEQ), 1);
+y = zeros(ns*NEQ, 1);
 
 % Allocate memory for the inequality multiplier
-z = zeros(ns*(2*length(x)), 1);
+z = zeros(ns*NINEQ, 1);
 
 % Create an optimization state
-state= Optizelle.EqualityConstrained.State.t(Optizelle.Rm,Optizelle.Rm,x,y);
+state = Optizelle.EqualityConstrained.State.t( ...
+   Optizelle.Rm,Optizelle.Rm,x,y);
 
 % Create a bundle of functions
 fns = Optizelle.EqualityConstrained.Functions.t;
@@ -195,8 +196,9 @@ fns.g = MyEq(myauxdata);
 
 % Solve the optimization problem
 % tic
-    state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
+state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
+   Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+   fns,state);
 % toc
 
 % Print out the reason for convergence

@@ -12,6 +12,7 @@ self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
 
 % xhat=(g''(x)dx)*dy
 self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
+% self.pps = @(x,dx,dy) 0;
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -23,14 +24,12 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       il = myauxdata.il;
       lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
-      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
-      NCONSTR = NEQ + NINEQ; % number of constraints (eq + ineq)
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
       ns = size(model.cont, 1);  %% number of scenarios (nominal + ncont)
       
-      constr = zeros(ns*(NEQ + NINEQ), 1);
+      constr = zeros(ns*(NEQ), 1);
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       
@@ -44,7 +43,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % Extract slack variable(s) s from x.
          s = x(lenx_no_s+1 : end);
          
-         constr(i*(NCONSTR) + (1:NCONSTR)) = [gn_local; hn_local - s];
+         constr(i*(NEQ) + (1:NEQ)) = [gn_local; hn_local - s];
       end
    end
 
@@ -56,13 +55,11 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       mpopt = myauxdata.mpopt;
       il = myauxdata.il;
       NEQ = myauxdata.NEQ; % number of equality constraints.
-      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
-      NCONSTR = NEQ + NINEQ; % number of constraints (eq + ineq)
       
       nb = size(mpc.bus, 1);     %% number of buses
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
-      J = sparse(ns*(NCONSTR), size(x,1));
+      J = sparse(ns*(NEQ), size(x,1));
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
@@ -83,14 +80,14 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          dgn = dgn';
          
          %jacobian wrt local variables
-         J(i*NCONSTR + (1:NCONSTR), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = [dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);...
+         J(i*NEQ + (1:NEQ), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = [dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);...
             dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)])];
          %jacobian wrt global variables
-         J(i*NCONSTR + (1:NCONSTR), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = [dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
+         J(i*NEQ + (1:NEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = [dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
             dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)])];
          
          % Set corner of Jacobian to -Id.
-         J(i*NCONSTR + (size(dgn,1)+1:NCONSTR), size(dgn,2)+1:size(x,1)) = -1;
+         J(i*NEQ + (size(dgn,1)+1:NEQ), size(dgn,2)+1:size(x,1)) = -1;
       end
    end
 
@@ -102,9 +99,6 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       NEQ = myauxdata.NEQ; % number of equality constraints.
-      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
-      NCONSTR = NEQ + NINEQ; % number of constraints (eq + ineq)
-      
       
       nb = size(mpc.bus, 1);          %% number of buses
       nl = size(mpc.branch, 1);       %% number of branches
@@ -120,7 +114,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
       % REVIEW: is this correct?
-      lam.ineqnonlin = ones(2*nl, 1);
+      lam.ineqnonlin = zeros(NEQ, 1);
       sigma = 0;
       
       for i = 0:ns-1
@@ -132,6 +126,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          
          % REVIEW: is this correct?
          lam.eqnonlin = dy(i*NEQ + (1:NEQ), 1);
+         
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
          % H_ll (PG_ref relevant only in nominal case, added to global part)
