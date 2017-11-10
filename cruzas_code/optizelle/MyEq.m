@@ -5,29 +5,13 @@ function self = MyEq(myauxdata)
 self.eval = @(x) constraints(x, myauxdata);
 
 % y=g'(x)dx
-% self.p = @(x,dx) jacobian(x, myauxdata) * dx;
-self.p = @(x,dx) bs(x, jacobian(x, myauxdata), dx);
+self.p = @(x,dx) jacobian(x, myauxdata) * dx;
 
 % xhat=g'(x)*dy
-% self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
-% self.ps = @(x,dy) bs(x, jacobian(x, myauxdata)', dy);
-self.ps = @(x,dy) 0;
+self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
 
 % xhat=(g''(x)dx)*dy
-% self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
-self.pps = @(x,dx,dy) 0;
-
-   function res = bs(a, A, b)
-      
-      if 0
-         size_a = size(a)
-         size_A = size(A)
-         size_b = size(b)
-         size_Ab = size(A*b)
-      end
-      
-      res = 0;
-   end
+self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -118,6 +102,9 @@ self.pps = @(x,dx,dy) 0;
       model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       NEQ = myauxdata.NEQ; % number of equality constraints.
+      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
+      NCONSTR = NEQ + NINEQ; % number of constraints (eq + ineq)
+      
       
       nb = size(mpc.bus, 1);          %% number of buses
       nl = size(mpc.branch, 1);       %% number of branches
@@ -132,7 +119,8 @@ self.pps = @(x,dx,dy) 0;
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
-      lam.ineqnonlin = zeros(2*nl, 1);
+      % REVIEW: is this correct?
+      lam.ineqnonlin = ones(2*nl, 1);
       sigma = 0;
       
       for i = 0:ns-1
@@ -142,6 +130,7 @@ self.pps = @(x,dx,dy) 0;
          cont = model.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
+         % REVIEW: is this correct?
          lam.eqnonlin = dy(i*NEQ + (1:NEQ), 1);
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
