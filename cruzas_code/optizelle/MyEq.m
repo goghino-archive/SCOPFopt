@@ -19,11 +19,11 @@ self.pps = @(x,dx,dy) 0;
 
    function res = bs(a, A, b)
       
-      if 1
-      size_a = size(a)
-      size_A = size(A)
-      size_b = size(b)
-      size_Ab = size(A*b)
+      if 0
+         size_a = size(a)
+         size_A = size(A)
+         size_b = size(b)
+         size_Ab = size(A*b)
       end
       
       res = 0;
@@ -40,6 +40,7 @@ self.pps = @(x,dx,dy) 0;
       lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
       NINEQ = myauxdata.NINEQ; % number of inequality constraints.
+      NCONSTR = NEQ + NINEQ; % number of constraints (eq + ineq)
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
@@ -59,8 +60,7 @@ self.pps = @(x,dx,dy) 0;
          % Extract slack variable(s) s from x.
          s = x(lenx_no_s+1 : end);
          
-         constr(i*(NEQ + NINEQ) + (1:NEQ)) = gn_local;
-         constr(i*(NEQ + NINEQ) + (NEQ+1:NEQ+NINEQ)) = hn_local - s;
+         constr(i*(NCONSTR) + (1:NCONSTR)) = [gn_local; hn_local - s];
       end
    end
 
@@ -73,12 +73,12 @@ self.pps = @(x,dx,dy) 0;
       il = myauxdata.il;
       NEQ = myauxdata.NEQ; % number of equality constraints.
       NINEQ = myauxdata.NINEQ; % number of inequality constraints.
+      NCONSTR = NEQ + NINEQ; % number of constraints (eq + ineq)
       
       nb = size(mpc.bus, 1);     %% number of buses
       ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
-      x_size = size(x)
-      J = sparse(ns*(NEQ + NINEQ), size(x,1) + NINEQ);
+      J = sparse(ns*(NCONSTR), size(x,1));
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
@@ -94,18 +94,19 @@ self.pps = @(x,dx,dy) 0;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn, gn, dhn, dgn] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         % Transpose since opf_consfcn returns dgn'.
+         % Transpose since opf_consfcn transposed solutions.
+         dhn = dhn';
          dgn = dgn';
          
          %jacobian wrt local variables
-         J(i*NEQ + (1:NEQ), ...
-            idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) =...
-            dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
-         
+         J(i*NCONSTR + (1:NCONSTR), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = [dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);...
+            dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)])];
          %jacobian wrt global variables
-         J(i*NEQ + (1:NEQ), ...
-            idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) =...
-            dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
+         J(i*NCONSTR + (1:NCONSTR), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = [dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
+            dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)])];
+         
+         % Set corner of Jacobian to -Id.
+         J(i*NCONSTR + (size(dgn,1)+1:NCONSTR), size(dgn,2)+1:size(x,1)) = -1;
       end
    end
 
