@@ -95,9 +95,19 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % Number of rows in dgn is 2*nb; in dhn it is 2*nl.
          % Number of columns in dgn, and dhn, is lenx_no_s. 
          % Structure of Jacobian in scenario i is:
-         % J = [dgn, 0s ; dhn -Id]. Hence why we use following row and
+         % J = [dgn, 0; dhn, -Id]. Hence why we use following row and
          % column indices.
          % Note: -Id has dimensions 2*nl by 2*nl.
+         %
+         % Considering the system of slack variables, we have
+         % [g(x); h(x) - s] for the equality constraints. 
+         % As we can see, we have 0s in the upper right corner of J since the 
+         % partial derivative of the constraints g(x) w.r.t. the slack variables
+         % is 0, since g(x) does not at all depend on s.
+         % Similarly, we have -Id in the specified (lower-right) corner
+         % given the constraints w.r.t. the slack variables are
+         % h(x) - s: taking the partial derivative of h(x) - s w.r.t. the slack 
+         % variables yields the -Id matrix. 
          J(i*NEQ + 2*nb + (1:2*nl), i*NEQ + lenx_no_s + (1:2*nl)) = neg_identity;
       end
    end
