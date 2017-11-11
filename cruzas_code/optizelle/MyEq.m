@@ -41,7 +41,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
          % Extract slack variable(s) s from x.
-         s = x(lenx_no_s+1 : end);
+         s = x(lenx_no_s + (1:2*nl));
          
          constr(i*(NEQ) + (1:NEQ)) = [gn_local; hn_local - s];
       end
@@ -54,12 +54,13 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       il = myauxdata.il;
+      lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
       
-      nb = size(mpc.bus, 1);     %% number of buses
-      ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
-      J = sparse(ns*(NEQ), size(x,1));
+      nb = size(mpc.bus, 1);     %% number of buses
+      nl = size(mpc.branch, 1);  %% number of branches
+      ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
@@ -67,6 +68,10 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
+      
+      % -Id. Placed in the lower-right "corner" of each scenario's 
+      % Jacobian matrix.
+      neg_identity = -sparse(eye(2*nl, 2*nl));
       
       for i = 0:ns-1
          idx = model.index.getGlobalIndices(mpc, ns, i);
@@ -86,8 +91,14 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          J(i*NEQ + (1:NEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = [dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
             dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)])];
          
-         % Set corner of Jacobian to -Id.
-         J(i*NEQ + (size(dgn,1)+1:NEQ), size(dgn,2)+1:size(x,1)) = -1;
+         % Set corner of Jacobian of this scenario to -Id.
+         % Number of rows in dgn is 2*nb; in dhn it is 2*nl.
+         % Number of columns in dgn, and dhn, is lenx_no_s. 
+         % Structure of Jacobian in scenario i is:
+         % J = [dgn, 0s ; dhn -Id]. Hence why we use following row and
+         % column indices.
+         % Note: -Id has dimensions 2*nl by 2*nl.
+         J(i*NEQ + 2*nb + (1:2*nl), i*NEQ + lenx_no_s + (1:2*nl)) = neg_identity;
       end
    end
 
@@ -114,7 +125,6 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
       % REVIEW: is this correct?
-      lam.ineqnonlin = zeros(2*nl, 1);
       sigma = 0;
       
       for i = 0:ns-1
@@ -124,8 +134,17 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          cont = model.cont(i+1);
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          
-         % REVIEW: is this correct?
-         lam.eqnonlin = dy(i*2*nb + (1:2*nb), 1);
+         % c(x) = [gn0; hn0 - s0; gn1; hn1 - s1; ... ; gnNs; hnNs - sNs]
+         % (Ns is the number of scenarios)
+         % where gn corresponds to equality constraints, hn corresponds to
+         % inequality constraints. 
+         %
+         % The lagrange multipliers in the dy will be composed accordingly:
+         % dy = [lamEq0; lamIneq0; lamEq1; lamIneq1; ... ; lamEqNs; lamIneqNs]
+         % Hence why we need to extract the lagrange multipliers as
+         % follows.
+         lam.eqnonlin = dy(i*NEQ + (1:2*nb), 1);
+         lam.ineqnonlin = dy(i*NEQ + 2*nb + (1:2*nl), 1);
          
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
