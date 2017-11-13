@@ -23,82 +23,14 @@ self.pps = @(x,dx,dz) 0;
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
-      % Extract data.
-      om = myauxdata.om;
-      mpc = myauxdata.mpc;
-      model = myauxdata.model;
-      mpopt = myauxdata.mpopt;
-      il = myauxdata.il;
-      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
-      
-      ns = size(model.cont, 1);  %% number of scenarios (nominal + ncont)
-      
-      constr = zeros(ns*(NINEQ), 1);
-      
-      [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
-      
-      for i = 0:ns-1
-         cont = model.cont(i+1);
-         idx = model.index.getGlobalIndices(mpc, ns, i);
-         [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
-         [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
-         
-%          size(hn_local)
-%          size(gn_local)
-         
-         constr(i*(NINEQ) + (1:NINEQ)) = hn_local;
-      end
-      
       % Append constraints for xmin <= x <= xmax.
-      constr = [constr; 
-                x >= myauxdata.xmin;
+      constr = [ x >= myauxdata.xmin;
                 myauxdata.xmax >= x];
    end
 
    function J = jacobian(x, myauxdata)
-      % Extract data.
-      om = myauxdata.om;
-      mpc = myauxdata.mpc;
-      model = myauxdata.model;
-      mpopt = myauxdata.mpopt;
-      il = myauxdata.il;
-      NINEQ = myauxdata.NINEQ; % number of inequality constraints.
-      
-      nl = size(mpc.branch, 1);  %% number of branches
-      ns = size(model.cont, 1);     %% number of scenarios (nominal + ncont)
-      
-      J = sparse(ns*(NINEQ), size(x,1));
-      
-      % number of inequality constraints, w/o xmin <= x <= xmax
-      NINEQ_nmm = 2*nl; 
-      
-      % get indices of REF gen and PV bus
-      [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
-      [PVbus_idx, nPVbus_idx] = model.index.getXbuses(mpc,2);%2==PV
-      
-      [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
-      [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
-      
-      for i = 0:ns-1
-         idx = model.index.getGlobalIndices(mpc, ns, i);
-         
-         cont = model.cont(i+1);
-         [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
-         [hn, gn, dhn, dgn] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
-         
-         % Transpose since opf_consfcn returns dhn'.
-         dhn = dhn';
-         
-         %jacobian wrt local variables
-         J(i*NINEQ + (1:NINEQ), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = ...
-            dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
-         %jacobian wrt global variables
-         J(i*NINEQ + (1:NINEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = ...
-            dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
-      end
-      
      % Append Jacobian for x >= xmin.
-     J = [J; sparse(eye(length(x)))];
+     J = sparse(eye(length(x)));
 
      % Append Jacobian for x <= xmax.
      J = [J; -sparse(eye(length(x)))];

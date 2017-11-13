@@ -41,7 +41,8 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
          % Extract slack variable(s) s from x.
-         s = x(lenx_no_s + (1:2*nl));
+         % s = [s0, s1, ... , sNS]
+         s = x(lenx_no_s + i*2*nl (1:2*nl));
          
          constr(i*(NEQ) + (1:NEQ)) = [gn_local; hn_local - s];
       end
