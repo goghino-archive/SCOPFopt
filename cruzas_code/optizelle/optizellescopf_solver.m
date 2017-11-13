@@ -165,11 +165,11 @@ xmax = [xmax; smax];
 
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
 % g(x) = 0, h(x) >= 0, z >= 0.
-NEQ = 2*nb + 2*nl; 
+NEQ = 2*nb + 2*nl;
 
 % Number of inequality constraints (xmin .<= x .<= xmax),
 % where xmin, x, and xmax are (column) vectors.
-NINEQ = 2*length(x); 
+NINEQ = 2*length(x);
 
 myauxdata.idx_nom = idx_nom;
 myauxdata.model = model;
@@ -190,19 +190,19 @@ y = zeros(ns*NEQ, 1);
 z = zeros(NINEQ, 1);
 
 % Create an optimization state
-state = Optizelle.EqualityConstrained.State.t( ...
-   Optizelle.Rm,Optizelle.Rm, x,y);
+state = Optizelle.Constrained.State.t( ...
+   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
 
 % Create a bundle of functions
-fns = Optizelle.EqualityConstrained.Functions.t;
+fns = Optizelle.Constrained.Functions.t;
 fns.f = MyObj(myauxdata);
 fns.g = MyEq(myauxdata);
-% fns.h = MyIneq(myauxdata);
+fns.h = MyIneq(myauxdata);
 
 % Solve the optimization problem
 % tic
-state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
-   Optizelle.Rm,Optizelle.Rm, Optizelle.Messaging.stdout, ...
+state = Optizelle.Constrained.Algorithms.getMin( ...
+   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
    fns,state);
 % toc
 
