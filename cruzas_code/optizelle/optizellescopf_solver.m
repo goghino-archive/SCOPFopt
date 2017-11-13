@@ -189,21 +189,44 @@ y = zeros(ns*NEQ, 1);
 % Allocate memory for the inequality multiplier
 z = zeros(NINEQ, 1);
 
+usingConstrained = 1;
+
 % Create an optimization state
-state = Optizelle.Constrained.State.t( ...
-   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
+if usingConstrained
+   
+   state = Optizelle.Constrained.State.t( ...
+      Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
+else
+   
+   state = Optizelle.EqualityConstrained.State.t( ...
+      Optizelle.Rm,Optizelle.Rm,x,y);
+end
 
 % Create a bundle of functions
-fns = Optizelle.Constrained.Functions.t;
+% fns = Optizelle.Constrained.Functions.t;
+fns = Optizelle.EqualityConstrained.Functions.t;
 fns.f = MyObj(myauxdata);
 fns.g = MyEq(myauxdata);
-fns.h = MyIneq(myauxdata);
+
+if usingConstrained
+   fns.h = MyIneq(myauxdata);
+end
 
 % Solve the optimization problem
 % tic
-state = Optizelle.Constrained.Algorithms.getMin( ...
-   Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
-   fns,state);
+if usingConstrained
+   
+   state = Optizelle.Constrained.Algorithms.getMin( ...
+      Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+      fns,state);
+   
+else
+   
+   state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
+      Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
+      fns,state);
+   
+end
 % toc
 
 % Print out the reason for convergence
