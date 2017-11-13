@@ -191,20 +191,24 @@ z = zeros(NINEQ, 1);
 
 usingConstrained = 1;
 
-% Create an optimization state
 if usingConstrained
    
+   % Create an optimization state
    state = Optizelle.Constrained.State.t( ...
       Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
+   
+   % Create a bundle of functions
+   fns = Optizelle.Constrained.Functions.t;
 else
    
+   % Create an optimization state
    state = Optizelle.EqualityConstrained.State.t( ...
       Optizelle.Rm,Optizelle.Rm,x,y);
+   
+   % Create a bundle of functions
+   fns = Optizelle.EqualityConstrained.Functions.t;
 end
 
-% Create a bundle of functions
-% fns = Optizelle.Constrained.Functions.t;
-fns = Optizelle.EqualityConstrained.Functions.t;
 fns.f = MyObj(myauxdata);
 fns.g = MyEq(myauxdata);
 

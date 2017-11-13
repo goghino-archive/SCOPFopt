@@ -4,20 +4,19 @@ function self = MyIneq(myauxdata)
 self.eval = @(x) constraints(x, myauxdata);
 
 % z=h'(x)dx
-self.p = @(x,dx) jacobian(x, myauxdata) * dx;
+% self.p = @(x,dx) jacobian(x) * dx;
+self.p = @(x,dx) bs(jacobian(x), dx);
 
 % xhat=h'(x)*dz
-self.ps = @(x,dz) jacobian(x, myauxdata)' * dz;
+% self.ps = @(x,dz) jacobian(x)' * dz;
+self.ps = @(x,dz) bs(jacobian(x)', dz);
 
 % xhat=(h''(x)dx)*dz
-self.pps = @(x,dx,dz) 0;
+self.pps = @(x,dx,dz) [ 0. ]; 
 
-   % Function for checking dimensions.
-   function res = bs(x, A, dx)
-      x_size = size(x)
+   function res = bs(A, x)
       A_size = size(A)
-      dx_size = size(dx)
-      Adx_size = size(A*dx)
+      x_size = size(x)
       res = 0;
    end
 
@@ -28,7 +27,7 @@ self.pps = @(x,dx,dz) 0;
                 myauxdata.xmax >= x];
    end
 
-   function J = jacobian(x, myauxdata)
+   function J = jacobian(x)
      % Append Jacobian for x >= xmin.
      J = sparse(eye(length(x)));
 
