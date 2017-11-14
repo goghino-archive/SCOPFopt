@@ -12,7 +12,7 @@ self.p = @(x,dx) bs(jacobian(x), dx);
 self.ps = @(x,dz) bs(jacobian(x)', dz);
 
 % xhat=(h''(x)dx)*dz
-self.pps = @(x,dx,dz) [ 0. ]; 
+self.pps = @(x,dx,dz) sparse(length(x),length(x)); 
 
    function res = bs(A, x)
       A_size = size(A)
@@ -23,8 +23,8 @@ self.pps = @(x,dx,dz) [ 0. ];
 % Helper functions.
    function constr = constraints(x, myauxdata)
       % Append constraints for xmin <= x <= xmax.
-      constr = [ x >= myauxdata.xmin;
-                myauxdata.xmax >= x];
+      constr = [ x - myauxdata.xmin;
+                myauxdata.xmax - x];
    end
 
    function J = jacobian(x)

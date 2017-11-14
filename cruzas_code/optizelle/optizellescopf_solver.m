@@ -165,6 +165,7 @@ xmax = [xmax; smax];
 
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
 % g(x) = 0, h(x) >= 0, z >= 0.
+%TODO: inequality constraints are formulated as h(x) <= 0, see opf_consfcn()
 NEQ = 2*nb + 2*nl;
 
 % Number of inequality constraints (xmin .<= x .<= xmax),

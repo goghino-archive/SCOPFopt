@@ -74,6 +74,8 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       % Jacobian matrix.
       neg_identity = -sparse(eye(2*nl, 2*nl));
       
+      J = sparse(ns*NEQ, length(x));
+      
       for i = 0:ns-1
          idx = model.index.getGlobalIndices(mpc, ns, i);
          
@@ -109,7 +111,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % given the constraints w.r.t. the slack variables are
          % h(x) - s: taking the partial derivative of h(x) - s w.r.t. the slack 
          % variables yields the -Id matrix. 
-         J(i*NEQ + 2*nb + (1:2*nl), i*NEQ + lenx_no_s + (1:2*nl)) = neg_identity;
+         J(i*NEQ + 2*nb + (1:2*nl), lenx_no_s + i*2*nl + (1:2*nl)) = neg_identity;
       end
    end
 
