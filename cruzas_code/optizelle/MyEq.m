@@ -44,7 +44,8 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % s = [s0, s1, ... , sNS]
          s = x(lenx_no_s + i*2*nl + (1:2*nl));
          
-         constr(i*(NEQ) + (1:NEQ)) = [gn_local; hn_local - s];
+         % Since h(x) <= 0 in Matpower, -h(x) + s = 0, s >= 0
+         constr(i*(NEQ) + (1:NEQ)) = [gn_local; -hn_local - s];
       end
    end
 
@@ -84,7 +85,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [hn, gn, dhn, dgn] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
          % Transpose since opf_consfcn transposed solutions.
-         dhn = dhn';
+         dhn = -dhn';
          dgn = dgn';
          
          %jacobian wrt local variables
@@ -103,7 +104,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % Note: -Id has dimensions 2*nl by 2*nl.
          %
          % Considering the system of slack variables, we have
-         % [g(x); h(x) - s] for the equality constraints. 
+         % [g(x); -h(x) - s] for the equality constraints. 
          % As we can see, we have 0s in the upper right corner of J since the 
          % partial derivative of the constraints g(x) w.r.t. the slack variables
          % is 0, since g(x) does not at all depend on s.

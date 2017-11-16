@@ -190,7 +190,7 @@ y = zeros(ns*NEQ, 1);
 % Allocate memory for the inequality multiplier
 z = zeros(NINEQ, 1);
 
-usingConstrained = 1;
+usingConstrained = 0;
 
 if usingConstrained
    
