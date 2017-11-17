@@ -50,7 +50,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       end
    end
 
-   function J = jacobvec(x, d, myauxdata)
+   function jvec = jacobvec(x, d, myauxdata)
       % Extract data.
       om = myauxdata.om;
       mpc = myauxdata.mpc;
@@ -119,10 +119,8 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       end
       
       if (size(d, 1) == size(x, 1))  % case: d == dx
-         disp('d == dx')
          jvec = J * d;
-      elseif (size(d, 1) == ns*NEQ) % case: d == dz
-         disp('d == dz')
+      elseif (size(d, 1) == ns*NEQ) % case: d == dy
          jvec = J' * d;
       end
    end

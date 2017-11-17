@@ -36,13 +36,11 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
      J_size = size(J)
      
      
-     if (size(d, 1) == size(x, 1))  % case: d == dx
-        disp('d == dx')
-        jvec = J * d;
-     elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz 
-        disp('d == dz')
-        jvec = J' * d;
-     end
+      if (size(d, 1) == size(x, 1))  % case: d == dx
+         jvec = J * d;
+      elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz
+         jvec = J' * d;
+      end
      
      jvec_size = size(jvec)
    end
