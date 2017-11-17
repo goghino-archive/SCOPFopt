@@ -52,7 +52,7 @@ end
 
 % Define inequalities, and bounds on x
 %
-% h(x) = [ x(1)*x(2)*x(3)(x(4) >= 25 ] 
+% h(x) = [ x(1)*x(2)*x(3)*x(4) >= 25 ] 
 %        [ x(1) >= 1]
 %        [ x(2) >= 1]
 %        [ x(3) >= 1]

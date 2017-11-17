@@ -191,7 +191,6 @@ y = zeros(ns*NEQ, 1);
 z = zeros(NINEQ, 1);
 
 usingConstrained = 0;
-
 if usingConstrained
    
    % Create an optimization state

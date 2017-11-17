@@ -4,21 +4,15 @@ function self = MyIneq(myauxdata)
 self.eval = @(x) constraints(x, myauxdata);
 
 % z=h'(x)dx
-self.p = @(x,dx) jacobian(x) * dx;
-% self.p = @(x,dx) bs(jacobian(x), dx);
+self.p = @(x,dx) jacobvec(x, dx);
 
 % xhat=h'(x)*dz
-self.ps = @(x,dz) jacobian(x)' * dz;
-% self.ps = @(x,dz) bs(jacobian(x)', dz);
+% self.ps = @(x,dz) jacobvec(x, dz);
+self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
 self.pps = @(x,dx,dz) sparse(length(x),length(x)); 
 
-   function res = bs(A, x)
-      A_size = size(A)
-      x_size = size(x)
-      res = 0;
-   end
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -29,11 +23,27 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
                 myauxdata.xmax - x];
    end
 
-   function J = jacobian(x)
+   function jvec = jacobvec(x, d)
+      x_size = size(x)
+      d_size = size(d)
+      
      % Append Jacobian for x - xmin >=0.
      J = sparse(eye(length(x)));
 
      % Append Jacobian for xmax - x >= 0.
      J = [J; -sparse(eye(length(x)))];
+     
+     J_size = size(J)
+     
+     
+     if (size(d, 1) == size(x, 1))  % case: d == dx
+        disp('d == dx')
+        jvec = J * d;
+     elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz 
+        disp('d == dz')
+        jvec = J' * d;
+     end
+     
+     jvec_size = size(jvec)
    end
 end

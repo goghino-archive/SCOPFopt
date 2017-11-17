@@ -5,10 +5,10 @@ function self = MyEq(myauxdata)
 self.eval = @(x) constraints(x, myauxdata);
 
 % y=g'(x)dx
-self.p = @(x,dx) jacobian(x, myauxdata) * dx;
+self.p = @(x,dx) jacobvec(x, dx, myauxdata);
 
 % xhat=g'(x)*dy
-self.ps = @(x,dy) jacobian(x, myauxdata)' * dy;
+self.ps = @(x,dy) jacobvec(x, dy, myauxdata);
 
 % xhat=(g''(x)dx)*dy
 self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
@@ -44,12 +44,13 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % s = [s0, s1, ... , sNS]
          s = x(lenx_no_s + i*2*nl + (1:2*nl));
          
-         % Since h(x) <= 0 in Matpower, -h(x) + s = 0, s >= 0
+         % Since h(x) <= 0 in Matpower, -h(x) - s = 0, s >= 0
+         % as required by Optizelle.
          constr(i*(NEQ) + (1:NEQ)) = [gn_local; -hn_local - s];
       end
    end
 
-   function J = jacobian(x, myauxdata)
+   function J = jacobvec(x, d, myauxdata)
       % Extract data.
       om = myauxdata.om;
       mpc = myauxdata.mpc;
@@ -71,7 +72,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
-      % -Id. Placed in the lower-right "corner" of each scenario's 
+      % -Id. Placed in the lower-right "corner" of each scenario's
       % Jacobian matrix.
       neg_identity = -sparse(eye(2*nl, 2*nl));
       
@@ -85,6 +86,8 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [hn, gn, dhn, dgn] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
          % Transpose since opf_consfcn transposed solutions.
+         % Take negative since Matpower requires h(x) <= 0 but
+         % Optizelle requires h(x) >= 0.
          dhn = -dhn';
          dgn = dgn';
          
@@ -97,22 +100,30 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          
          % Set corner of Jacobian of this scenario to -Id.
          % Number of rows in dgn is 2*nb; in dhn it is 2*nl.
-         % Number of columns in dgn, and dhn, is lenx_no_s. 
+         % Number of columns in dgn, and dhn, is lenx_no_s.
          % Structure of Jacobian in scenario i is:
          % J = [dgn, 0; dhn, -Id]. Hence why we use following row and
          % column indices.
          % Note: -Id has dimensions 2*nl by 2*nl.
          %
          % Considering the system of slack variables, we have
-         % [g(x); -h(x) - s] for the equality constraints. 
-         % As we can see, we have 0s in the upper right corner of J since the 
+         % [g(x); h(x) - s] for the equality constraints.
+         % As we can see, we have 0s in the upper right corner of J since the
          % partial derivative of the constraints g(x) w.r.t. the slack variables
          % is 0, since g(x) does not at all depend on s.
          % Similarly, we have -Id in the specified (lower-right) corner
          % given the constraints w.r.t. the slack variables are
-         % h(x) - s: taking the partial derivative of h(x) - s w.r.t. the slack 
-         % variables yields the -Id matrix. 
+         % h(x) - s: taking the partial derivative of h(x) - s w.r.t. the slack
+         % variables yields the -Id matrix.
          J(i*NEQ + 2*nb + (1:2*nl), lenx_no_s + i*2*nl + (1:2*nl)) = neg_identity;
+      end
+      
+      if (size(d, 1) == size(x, 1))  % case: d == dx
+         disp('d == dx')
+         jvec = J * d;
+      elseif (size(d, 1) == ns*NEQ) % case: d == dz
+         disp('d == dz')
+         jvec = J' * d;
       end
    end
 
@@ -151,7 +162,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % c(x) = [gn0; hn0 - s0; gn1; hn1 - s1; ... ; gnNs; hnNs - sNs]
          % (Ns is the number of scenarios)
          % where gn corresponds to equality constraints, hn corresponds to
-         % inequality constraints. 
+         % inequality constraints.
          %
          % The lagrange multipliers in the dy will be composed accordingly:
          % dy = [lamEq0; lamIneq0; lamEq1; lamIneq1; ... ; lamEqNs; lamIneqNs]
