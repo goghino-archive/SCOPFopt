@@ -153,8 +153,10 @@ x = x0;
 % Slack variable(s)
 s = zeros(ns * 2*nl, 1);
 % Bounds on slack variable(s) smin <= s <= smax
+% smin = (1e-6) + zeros(ns * 2*nl, 1);
+% smax = (1e4) * ones(ns * 2*nl, 1);
 smin = zeros(ns * 2*nl, 1);
-smax = inf(ns * 2*nl, 1);
+smax = ones(ns * 2*nl, 1);
 
 % Append slack variable(s) to initial guess.
 x = [x; s];
@@ -162,6 +164,12 @@ x = [x; s];
 % Append bounds on slack variable(s).
 xmin = [xmin; smin];
 xmax = [xmax; smax];
+
+xmin(xmin == -Inf) = 1e-12;
+xmin(xmin == Inf) = 1e20;
+
+xmax(xmax == -Inf) = 1e-12;
+xmax(xmax == Inf) = 1e20;
 
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
 % g(x) = 0, h(x) >= 0, z >= 0.
@@ -190,7 +198,7 @@ y = zeros(ns*NEQ, 1);
 % Allocate memory for the inequality multiplier
 z = zeros(NINEQ, 1);
 
-usingConstrained = 0;
+usingConstrained = 1;
 if usingConstrained
    
    % Create an optimization state
