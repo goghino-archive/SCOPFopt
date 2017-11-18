@@ -48,6 +48,19 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % as required by Optizelle.
          constr(i*(NEQ) + (1:NEQ)) = [gn_local; -hn_local - s];
       end
+      
+      %% Test for Inf, -Inf, and NaN in constr.
+      if find(constr == Inf, 1)
+         disp('MyEq: Inf found in constr')
+      end
+      
+      if find(constr == -Inf, 1)
+         disp('MyEq: -Inf found in constr')
+      end
+      
+      if find(isnan(constr), 1)
+         disp('MyEq: NaN found in constr')
+      end
    end
 
    function jvec = jacobvec(x, d, myauxdata)
@@ -123,6 +136,19 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       elseif (size(d, 1) == ns*NEQ) % case: d == dy
          jvec = J' * d;
       end
+      
+      %% Test for Inf, -Inf, and NaN in jvec.
+      if find(jvec == Inf, 1)
+         disp('MyEq: Inf found in jvec')
+      end
+      
+      if find(jvec == -Inf, 1)
+         disp('MyEq: -Inf found in jvec')
+      end
+      
+      if find(isnan(jvec), 1)
+         disp('MyEq: NaN found in jvec')
+      end
    end
 
    function H = hessian(x, myauxdata, dy)
@@ -196,6 +222,19 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          H(idx([VMscopf(PVbus_idx)]), idx([VMscopf(PVbus_idx)])) = ...
             H(idx([VMscopf(PVbus_idx)]), idx([VMscopf(PVbus_idx)])) + ...
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
+      end
+      
+      %% Test for Inf, -Inf, and NaN in H.
+      if find(H == Inf, 1)
+         disp('MyEq: Inf found in H')
+      end
+      
+      if find(H == -Inf, 1)
+         disp('MyEq: -Inf found in H')
+      end
+      
+      if find(isnan(H), 1)
+         disp('MyEq: NaN found in H')
       end
    end
 end

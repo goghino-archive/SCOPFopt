@@ -22,18 +22,25 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       xmin = myauxdata.xmin;
       xmax = myauxdata.xmax;
       
-%       xmin(xmin == -Inf) = 1e-12;
-%       xmin(xmin == Inf) = 1e20;
-%       
-%       xmax(xmax == -Inf) = 1e-12;
-%       xmax(xmax == Inf) = 1e20;
-      
       % -> x - xmin >= 0
       % -> xmax - x >= 0
       constr = [x - xmin;
                 xmax - x];
       %       constr = [x - (1e-6 + zeros(length(x),1));
       %                 1e4*ones(length(x),1) - x];
+
+      %% Test for Inf, -Inf, and NaN in constr.
+      if find(constr == Inf, 1)
+         disp('MyIneq: Inf found in constr')
+      end
+      
+      if find(constr == -Inf, 1)
+         disp('MyIneq: -Inf found in constr')
+      end
+      
+      if find(isnan(constr), 1)
+         disp('MyIneq: NaN found in constr')
+      end
    end
 
    function jvec = jacobvec(x, d)
@@ -42,15 +49,24 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       
       % Append Jacobian for xmax - x >= 0.
       J = [J; -sparse(eye(length(x)))];
-      
+     
       if (size(d, 1) == size(x, 1))  % case: d == dx
-         %          disp('d == dx')
          jvec = J * d;
       elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz
-         %          disp('d == dz')
          jvec = J' * d;
       end
       
-      %      jvec_size = size(jvec)
+      %% Test for Inf, -Inf, and NaN in jvec.
+      if find(jvec == Inf, 1)
+         disp('MyIneq: Inf found in jvec')
+      end
+      
+      if find(jvec == -Inf, 1)
+         disp('MyIneq: -Inf found in jvec')
+      end
+      
+      if find(isnan(jvec), 1)
+         disp('MyIneq: NaN found in jvec')
+      end
    end
 end

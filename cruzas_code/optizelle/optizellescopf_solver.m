@@ -150,26 +150,39 @@ setupOptizelle();
 % Initial guess.
 x = x0;
 
+% Change from infinite bounds to finite bounds xmin <= x <= xmax.
+xmin(xmin == -Inf) = -1e20;
+xmin(xmin == Inf) = 1e20;
+
+xmax(xmax == -Inf) = -1e20;
+xmax(xmax == Inf) = 1e20;
+
 % Slack variable(s)
 s = zeros(ns * 2*nl, 1);
 % Bounds on slack variable(s) smin <= s <= smax
-% smin = (1e-6) + zeros(ns * 2*nl, 1);
-% smax = (1e4) * ones(ns * 2*nl, 1);
 smin = zeros(ns * 2*nl, 1);
-smax = ones(ns * 2*nl, 1);
+% smax = (1e20) * ones(ns * 2*nl, 1);
+smax = inf(ns * 2*nl, 1);
 
 % Append slack variable(s) to initial guess.
 x = [x; s];
-
 % Append bounds on slack variable(s).
+
 xmin = [xmin; smin];
 xmax = [xmax; smax];
 
-xmin(xmin == -Inf) = 1e-12;
-xmin(xmin == Inf) = 1e20;
-
-xmax(xmax == -Inf) = 1e-12;
-xmax(xmax == Inf) = 1e20;
+% Test for Inf, -Inf, Nan in xmin, x, and xmax
+% inf_found_in_xmin = find(xmin == Inf)
+% neg_inf_found_in_xmin = find(xmin == -Inf)
+% nan_found_in_xmin = find(isnan(xmin))
+% 
+% inf_found_in_xmax = find(xmax == Inf)
+% neg_inf_found_in_xmax = find(xmax == -Inf)
+% nan_found_in_xmax = find(isnan(xmax))
+% 
+% inf_found_in_x = find(x == Inf)
+% neg_inf_found_in_x = find(x == -Inf)
+% nan_found_in_x = find(isnan(x))
 
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
 % g(x) = 0, h(x) >= 0, z >= 0.
