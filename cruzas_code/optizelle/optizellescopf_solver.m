@@ -161,8 +161,8 @@ xmax(xmax == Inf) = 1e20;
 s = zeros(ns * 2*nl, 1);
 % Bounds on slack variable(s) smin <= s <= smax
 smin = zeros(ns * 2*nl, 1);
-% smax = (1e20) * ones(ns * 2*nl, 1);
-smax = inf(ns * 2*nl, 1);
+smax = (1e20) * ones(ns * 2*nl, 1);
+% smax = inf(ns * 2*nl, 1);
 
 % Append slack variable(s) to initial guess.
 x = [x; s];
