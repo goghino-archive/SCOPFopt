@@ -153,15 +153,14 @@ global Optizelle;
 setupOptizelle();
 
 %% Settings for testing
-
 % Toggle on/off if we want to replace infinites with numerical proxies.
 replaceInfs = 0;
 
 % Select which optimization we wish to do.
-usingUnconstrained = 1;
+usingUnconstrained = 0;
 usingConstrained = 0;
 usingEqualityConstrained = 0;
-usingInequalityConstrained = 0;
+usingInequalityConstrained = 1;
 
 %% Further problem settings and computation of (local) minimum.
 
