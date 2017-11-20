@@ -133,7 +133,12 @@ end
 options.lb = xmin;
 options.ub = xmax;
 
-idx_nom = model.index.getGlobalIndices(mpc, ns, 0); %evaluate cost of nominal case (only Pg/Qg are relevant)
+% REVIEW: Could the following (to be modified) by any chance be needed?
+% options.cl = [repmat([zeros(2*nb, 1);  -Inf(2*nl2, 1)], [ns, 1]); l];
+% options.cu = [repmat([zeros(2*nb, 1); zeros(2*nl2, 1)], [ns, 1]); u+1e10]; %add 1e10 so that ipopt doesn't remove l==u case
+
+% Evaluate cost of nominal case (only Pg/Qg are relevant).
+idx_nom = model.index.getGlobalIndices(mpc, ns, 0);
 
 % Pack some additional info to output so that we can verify the solution.
 meta.Ybus = Ybus;
@@ -147,25 +152,39 @@ meta.ub = options.ub;
 global Optizelle;
 setupOptizelle();
 
-% Initial guess.
-x = x0;
+%% Settings for testing
 
-% Change from infinite bounds to finite bounds xmin <= x <= xmax.
-xmin(xmin == -Inf) = -1e10;
-xmin(xmin == Inf) = 1e10;
+% Toggle on/off if we want to replace infinites with numerical proxies.
+replaceInfs = 0;
 
-xmax(xmax == -Inf) = -1e10;
-xmax(xmax == Inf) = 1e10;
+% Select which optimization we wish to do.
+usingUnconstrained = 1;
+usingConstrained = 0;
+usingEqualityConstrained = 0;
+usingInequalityConstrained = 0;
+
+%% Further problem settings and computation of (local) minimum.
 
 % Slack variable(s)
 s = zeros(ns * 2*nl, 1);
-% Bounds on slack variable(s) smin <= s <= smax
-smin = zeros(ns * 2*nl, 1);
-smax = (1e10) * ones(ns * 2*nl, 1);
-% smax = inf(ns * 2*nl, 1);
+
+% Bounds on slack variable(s) smin .<= s .<= smax
+smin = zeros(size(s));
+smax = inf(size(s));
+
+% Change from infinite bounds to finite bounds xmin .<= x .<= xmax.
+if replaceInfs
+   xmin(xmin == -Inf) = -1e10;
+   xmin(xmin == Inf) = 1e10;
+   
+   xmax(xmax == -Inf) = -1e10;
+   xmax(xmax == Inf) = 1e10;
+   
+   smax = (1e10) * ones(size(s));
+end
 
 % Append slack variable(s) to initial guess.
-x = [x; s];
+x = [x0; s];
 
 % Append bounds on slack variable(s).
 xmin = [xmin; smin];
@@ -173,41 +192,41 @@ xmax = [xmax; smax];
 
 %% Test for Inf, -Inf, and NaN in x.
 if find(x == Inf, 1)
-   disp('OPT: Inf found in x')
+   disp('optizellescopf_solver: Inf found in x')
 end
 
 if find(x == -Inf, 1)
-   disp('OPT: -Inf found in x')
+   disp('optizellescopf_solver: -Inf found in x')
 end
 
 if find(isnan(x), 1)
-   disp('OPT: NaN found in x')
+   disp('optizellescopf_solver: NaN found in x')
 end
 
 %% Test for Inf, -Inf, and NaN in xmin.
 if find(xmin == Inf, 1)
-   disp('OPT: Inf found in xmin')
+   disp('optizellescopf_solver: Inf found in xmin')
 end
 
 if find(xmin == -Inf, 1)
-   disp('OPT: -Inf found in xmin')
+   disp('optizellescopf_solver: -Inf found in xmin')
 end
 
 if find(isnan(xmin), 1)
-   disp('OPT: NaN found in xmin')
+   disp('optizellescopf_solver: NaN found in xmin')
 end
 
-%% Test for Inf, -Inf, and NaN in x.
+%% Test for Inf, -Inf, and NaN in xmax.
 if find(xmax == Inf, 1)
-   disp('OPT: Inf found in xmax')
+   disp('optizellescopf_solver: Inf found in xmax')
 end
 
 if find(xmax == -Inf, 1)
-   disp('OPT: -Inf found in xmax')
+   disp('optizellescopf_solver: -Inf found in xmax')
 end
 
 if find(isnan(xmax), 1)
-   disp('OPT: NaN found in xmax')
+   disp('optizellescopf_solver: NaN found in xmax')
 end
 
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
@@ -237,8 +256,28 @@ y = zeros(ns*NEQ, 1);
 % Allocate memory for the inequality multiplier
 z = zeros(NINEQ, 1);
 
-usingConstrained = 1;
-if usingConstrained
+if usingUnconstrained
+   disp('Using Unconstrained...')
+elseif usingConstrained
+   disp('Using Constrained...')
+elseif usingEqualityConstrained
+   disp('Using EqualityConstrained...')
+elseif usingInequalityConstrained 
+   disp('Using InequalityConstrained...')
+end
+
+% No need to check if more than one selected since using if...elseif statements
+% below.
+
+if usingUnconstrained
+
+   % Create an optimization state
+   state = Optizelle.Unconstrained.State.t(Optizelle.Rm, x);
+   
+   % Create a bundle of functions
+   fns = Optizelle.Unconstrained.Functions.t;
+   
+elseif usingConstrained
    
    % Create an optimization state
    state = Optizelle.Constrained.State.t( ...
@@ -246,7 +285,8 @@ if usingConstrained
    
    % Create a bundle of functions
    fns = Optizelle.Constrained.Functions.t;
-else
+   
+elseif usingEqualityConstrained
    
    % Create an optimization state
    state = Optizelle.EqualityConstrained.State.t( ...
@@ -254,30 +294,53 @@ else
    
    % Create a bundle of functions
    fns = Optizelle.EqualityConstrained.Functions.t;
+   
+elseif usingInequalityConstrained
+   
+   state=Optizelle.InequalityConstrained.State.t( ...
+      Optizelle.Rm,Optizelle.Rm,x,z);
+   
+   % Create a bundle of functions
+   fns=Optizelle.InequalityConstrained.Functions.t;
 end
 
+% Define bundle of functions.
 fns.f = MyObj(myauxdata);
-fns.g = MyEq(myauxdata);
 
-if usingConstrained
+if usingConstrained || usingEqualityConstrained
+   fns.g = MyEq(myauxdata);
+end
+
+if usingConstrained || usingInequalityConstrained
    fns.h = MyIneq(myauxdata);
 end
 
 % Solve the optimization problem
 % tic
-if usingConstrained
+if usingUnconstrained
+
+    state = Optizelle.Unconstrained.Algorithms.getMin( ...
+        Optizelle.Rm, Optizelle.Messaging.stdout, ...
+        fns,state);
+   
+elseif usingConstrained
    
    state = Optizelle.Constrained.Algorithms.getMin( ...
       Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
       fns,state);
    
-else
+elseif usingEqualityConstrained
    
    state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
       Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
       fns,state);
    
+elseif usingInequalityConstrained
+   
+   state = Optizelle.InequalityConstrained.Algorithms.getMin( ...
+      Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
 end
+
 % toc
 
 % Print out the reason for convergence
