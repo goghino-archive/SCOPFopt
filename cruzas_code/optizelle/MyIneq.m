@@ -4,11 +4,11 @@ function self = MyIneq(myauxdata)
 self.eval = @(x) constraints(x, myauxdata);
 
 % z=h'(x)dx
-self.p = @(x,dx) jacobvec(x, dx);
+self.p = @(x,dx) jacobvec(x, dx, myauxdata);
 % self.p = @(x,dz) 0;
 
 % xhat=h'(x)*dz
-self.ps = @(x,dz) jacobvec(x, dz);
+self.ps = @(x,dz) jacobvec(x, dz, myauxdata);
 % self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
@@ -22,12 +22,8 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       xmin = myauxdata.xmin;
       xmax = myauxdata.xmax;
       
-      % -> x - xmin >= 0
-      % -> xmax - x >= 0
-      constr = [x - xmin;
-                xmax - x];
-%             constr = [x - (1e-6 + zeros(length(x),1));
-%                       1e4*ones(length(x),1) - x];
+      constr = [x - xmin; 
+                xmax - x(1:myauxdata.lenx_no_s)];
 
       %% Test for Inf, -Inf, and NaN in constr.
       if find(constr == Inf, 1)
@@ -43,20 +39,18 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       end
    end
 
-   function jvec = jacobvec(x, d)
+   function jvec = jacobvec(x, d, myauxdata)
+      lenx_no_s = myauxdata.lenx_no_s;
+      
       % Append Jacobian for x - xmin >=0.
       J = sparse(eye(length(x)));
       
-      % Append Jacobian for xmax - x >= 0.
-      J = [J; -sparse(eye(length(x)))];
-      
-      % Replace infinite bounds in d with finite bounds.
-%       d(d == -Inf) = -1e10;
-%       d(d == Inf) = 1e10;
-% 
-%       d(d == -Inf) = -1e10;
-%       d(d == Inf) = 1e10;
-      
+      Jmax = sparse(zeros(lenx_no_s, length(x)));
+      Jmax(1:lenx_no_s, 1:lenx_no_s) = -eye(lenx_no_s);
+
+      % Append Jacobian for xmax - x (with no slacks) >= 0.
+      J = [J; Jmax];
+     
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          jvec = J * d;
@@ -65,8 +59,6 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
          dType = 'dz';
          jvec = J' * d;
       end
-      
-%       jvec(isnan(jvec)) = 0;
       
       %% Test for Inf, -Inf, and NaN in d.
       if find(d == Inf)

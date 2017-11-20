@@ -153,7 +153,8 @@ global Optizelle;
 setupOptizelle();
 
 %% Settings for testing
-% Toggle on/off if we want to replace infinites with numerical proxies.
+% Toggle on/off if we want to replace infinites with numerical proxies
+% (applies only to the variables defined in this file).
 replaceInfs = 0;
 
 % Select which optimization we wish to do.
@@ -167,9 +168,8 @@ usingInequalityConstrained = 1;
 % Slack variable(s)
 s = zeros(ns * 2*nl, 1);
 
-% Bounds on slack variable(s) smin .<= s .<= smax
+% Bounds on slack variable(s) smin .<= s (no upper bounds)
 smin = zeros(size(s));
-smax = inf(size(s));
 
 % Change from infinite bounds to finite bounds xmin .<= x .<= xmax.
 if replaceInfs
@@ -177,17 +177,15 @@ if replaceInfs
    xmin(xmin == Inf) = 1e10;
    
    xmax(xmax == -Inf) = -1e10;
-   xmax(xmax == Inf) = 1e10;
-   
-   smax = (1e10) * ones(size(s));
+   xmax(xmax == Inf) = 1e10;  
 end
 
 % Append slack variable(s) to initial guess.
 x = [x0; s];
 
-% Append bounds on slack variable(s).
+% Append bounds on slack variable(s), considering that there are no 
+% upper bounds on slacks.
 xmin = [xmin; smin];
-xmax = [xmax; smax];
 
 %% Test for Inf, -Inf, and NaN in x.
 if find(x == Inf, 1)
@@ -233,9 +231,9 @@ end
 %TODO: inequality constraints are formulated as h(x) <= 0, see opf_consfcn()
 NEQ = 2*nb + 2*nl;
 
-% Number of inequality constraints (xmin .<= x .<= xmax),
-% where xmin, x, and xmax are (column) vectors.
-NINEQ = 2*length(x);
+% Number of inequality constraints (xmin .<= x_with_s, x_no_s .<= xmax),
+% where xmin, x_with_s, x_no_s, and xmax are (column) vectors.
+NINEQ = 2*length(x0) + length(s);
 
 myauxdata.idx_nom = idx_nom;
 myauxdata.model = model;
