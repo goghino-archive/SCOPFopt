@@ -49,6 +49,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          constr(i*(NEQ) + (1:NEQ)) = [gn_local; -hn_local - s];
       end
       
+      
       %% Test for Inf, -Inf, and NaN in constr.
       if find(constr == Inf, 1)
          disp('MyEq: Inf found in constr')
@@ -131,10 +132,37 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          J(i*NEQ + 2*nb + (1:2*nl), lenx_no_s + i*2*nl + (1:2*nl)) = neg_identity;
       end
       
+      % Replace infinite bounds in d with finite bounds.
+      d(d == -Inf) = -1e20;
+      d(d == Inf) = 1e20;
+
+      d(d == -Inf) = -1e20;
+      d(d == Inf) = 1e20;
+      
+%       d(isnan(d)) = 0;
+      
+      dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
+         dType = 'dx';
          jvec = J * d;
       elseif (size(d, 1) == ns*NEQ) % case: d == dy
          jvec = J' * d;
+         dType = 'dy';
+      end
+      
+%       jvec(isnan(jvec)) = 0;
+      
+      %% Test for Inf, -Inf, and NaN in d.
+      if find(d == Inf)
+         fprintf('MyEq: Inf found in %s\n', dType);
+      end
+      
+      if find(d == -Inf)
+         fprintf('MyEq: -Inf found in %s\n', dType);
+      end
+      
+      if find(isnan(d))
+         fprintf('MyEq: NaN found in %s\n', dType);
       end
       
       %% Test for Inf, -Inf, and NaN in jvec.
@@ -165,6 +193,15 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       ns = size(model.cont, 1);           %% number of scenarios (nominal + ncont)
       
       H = sparse(size(x,1), size(x,1));
+      
+      % Replace infinite bounds in d with finite bounds.
+      dy(dy == -Inf) = -1e20;
+      dy(dy == Inf) = 1e20;
+
+      dy(dy == -Inf) = -1e20;
+      dy(dy == Inf) = 1e20;
+      
+%       dy(isnan(dy)) = 0;
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);

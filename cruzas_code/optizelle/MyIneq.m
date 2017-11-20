@@ -26,8 +26,8 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       % -> xmax - x >= 0
       constr = [x - xmin;
                 xmax - x];
-      %       constr = [x - (1e-6 + zeros(length(x),1));
-      %                 1e4*ones(length(x),1) - x];
+%             constr = [x - (1e-6 + zeros(length(x),1));
+%                       1e4*ones(length(x),1) - x];
 
       %% Test for Inf, -Inf, and NaN in constr.
       if find(constr == Inf, 1)
@@ -49,11 +49,36 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       
       % Append Jacobian for xmax - x >= 0.
       J = [J; -sparse(eye(length(x)))];
-     
+      
+      % Replace infinite bounds in d with finite bounds.
+      d(d == -Inf) = -1e20;
+      d(d == Inf) = 1e20;
+
+      d(d == -Inf) = -1e20;
+      d(d == Inf) = 1e20;
+      
+      dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          jvec = J * d;
+         dType = 'dx';
       elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz
+         dType = 'dz';
          jvec = J' * d;
+      end
+      
+%       jvec(isnan(jvec)) = 0;
+      
+      %% Test for Inf, -Inf, and NaN in d.
+      if find(d == Inf)
+         fprintf('MyIneq: Inf found in %s\n', dType);
+      end
+      
+      if find(d == -Inf)
+         fprintf('MyIneq: -Inf found in %s\n', dType);
+      end
+      
+      if find(isnan(d))
+         fprintf('MyIneq: NaN found in %s\n', dType);
       end
       
       %% Test for Inf, -Inf, and NaN in jvec.

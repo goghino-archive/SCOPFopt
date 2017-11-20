@@ -166,23 +166,49 @@ smax = (1e20) * ones(ns * 2*nl, 1);
 
 % Append slack variable(s) to initial guess.
 x = [x; s];
-% Append bounds on slack variable(s).
 
+% Append bounds on slack variable(s).
 xmin = [xmin; smin];
 xmax = [xmax; smax];
 
-% Test for Inf, -Inf, Nan in xmin, x, and xmax
-% inf_found_in_xmin = find(xmin == Inf)
-% neg_inf_found_in_xmin = find(xmin == -Inf)
-% nan_found_in_xmin = find(isnan(xmin))
-% 
-% inf_found_in_xmax = find(xmax == Inf)
-% neg_inf_found_in_xmax = find(xmax == -Inf)
-% nan_found_in_xmax = find(isnan(xmax))
-% 
-% inf_found_in_x = find(x == Inf)
-% neg_inf_found_in_x = find(x == -Inf)
-% nan_found_in_x = find(isnan(x))
+%% Test for Inf, -Inf, and NaN in x.
+if find(x == Inf, 1)
+   disp('OPT: Inf found in x')
+end
+
+if find(x == -Inf, 1)
+   disp('OPT: -Inf found in x')
+end
+
+if find(isnan(x), 1)
+   disp('OPT: NaN found in x')
+end
+
+%% Test for Inf, -Inf, and NaN in xmin.
+if find(xmin == Inf, 1)
+   disp('OPT: Inf found in xmin')
+end
+
+if find(xmin == -Inf, 1)
+   disp('OPT: -Inf found in xmin')
+end
+
+if find(isnan(xmin), 1)
+   disp('OPT: NaN found in xmin')
+end
+
+%% Test for Inf, -Inf, and NaN in x.
+if find(xmax == Inf, 1)
+   disp('OPT: Inf found in xmax')
+end
+
+if find(xmax == -Inf, 1)
+   disp('OPT: -Inf found in xmax')
+end
+
+if find(isnan(xmax), 1)
+   disp('OPT: NaN found in xmax')
+end
 
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
 % g(x) = 0, h(x) >= 0, z >= 0.
