@@ -51,11 +51,11 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       J = [J; -sparse(eye(length(x)))];
       
       % Replace infinite bounds in d with finite bounds.
-      d(d == -Inf) = -1e20;
-      d(d == Inf) = 1e20;
+      d(d == -Inf) = -1e10;
+      d(d == Inf) = 1e10;
 
-      d(d == -Inf) = -1e20;
-      d(d == Inf) = 1e20;
+      d(d == -Inf) = -1e10;
+      d(d == Inf) = 1e10;
       
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx

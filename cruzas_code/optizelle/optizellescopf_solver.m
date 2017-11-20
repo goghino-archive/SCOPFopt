@@ -151,17 +151,17 @@ setupOptizelle();
 x = x0;
 
 % Change from infinite bounds to finite bounds xmin <= x <= xmax.
-xmin(xmin == -Inf) = -1e20;
-xmin(xmin == Inf) = 1e20;
+xmin(xmin == -Inf) = -1e10;
+xmin(xmin == Inf) = 1e10;
 
-xmax(xmax == -Inf) = -1e20;
-xmax(xmax == Inf) = 1e20;
+xmax(xmax == -Inf) = -1e10;
+xmax(xmax == Inf) = 1e10;
 
 % Slack variable(s)
 s = zeros(ns * 2*nl, 1);
 % Bounds on slack variable(s) smin <= s <= smax
 smin = zeros(ns * 2*nl, 1);
-smax = (1e20) * ones(ns * 2*nl, 1);
+smax = (1e10) * ones(ns * 2*nl, 1);
 % smax = inf(ns * 2*nl, 1);
 
 % Append slack variable(s) to initial guess.

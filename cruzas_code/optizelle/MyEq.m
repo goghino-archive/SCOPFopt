@@ -133,11 +133,11 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       end
       
       % Replace infinite bounds in d with finite bounds.
-      d(d == -Inf) = -1e20;
-      d(d == Inf) = 1e20;
+      d(d == -Inf) = -1e10;
+      d(d == Inf) = 1e10;
 
-      d(d == -Inf) = -1e20;
-      d(d == Inf) = 1e20;
+      d(d == -Inf) = -1e10;
+      d(d == Inf) = 1e10;
       
 %       d(isnan(d)) = 0;
       
@@ -195,11 +195,11 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       H = sparse(size(x,1), size(x,1));
       
       % Replace infinite bounds in d with finite bounds.
-      dy(dy == -Inf) = -1e20;
-      dy(dy == Inf) = 1e20;
+      dy(dy == -Inf) = -1e10;
+      dy(dy == Inf) = 1e10;
 
-      dy(dy == -Inf) = -1e20;
-      dy(dy == Inf) = 1e20;
+      dy(dy == -Inf) = -1e10;
+      dy(dy == Inf) = 1e10;
       
 %       dy(isnan(dy)) = 0;
       
