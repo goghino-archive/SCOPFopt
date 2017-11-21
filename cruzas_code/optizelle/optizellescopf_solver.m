@@ -285,6 +285,10 @@ if withSlacks
    disp('Using slack variables...')
 end
 
+if replaceInfs
+   disp('Replacing Infs in xmin and xmax with numerical proxies...')
+end
+   
 % No need to check if more than one selected since using if...elseif statements
 % below.
 

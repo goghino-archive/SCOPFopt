@@ -265,6 +265,10 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
             H_local([VMopf(PVbus_idx)], [VMopf(PVbus_idx)]);
       end
       
+      % Take negative since Matpower requires h(x) <= 0 but
+      % Optizelle requires h(x) >= 0.
+      H = -H;
+      
       %% Test for Inf, -Inf, and NaN in H.
       if find(H == Inf, 1)
          disp('MyEq: Inf found in H')
