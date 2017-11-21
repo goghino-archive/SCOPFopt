@@ -160,8 +160,12 @@ replaceInfs = 0;
 % Select which optimization we wish to do.
 usingUnconstrained = 0;
 usingConstrained = 0;
-usingEqualityConstrained = 0;
-usingInequalityConstrained = 1;
+usingEqualityConstrained = 1;
+usingInequalityConstrained = 0;
+
+% Select whether we want slack variables or not (only applies to MyEq for
+% now).
+withSlacks = 0;
 
 %% Further problem settings and computation of (local) minimum.
 
@@ -180,12 +184,16 @@ if replaceInfs
    xmax(xmax == Inf) = 1e10;  
 end
 
-% Append slack variable(s) to initial guess.
-x = [x0; s];
-
-% Append bounds on slack variable(s), considering that there are no 
-% upper bounds on slacks.
-xmin = [xmin; smin];
+if withSlacks
+   % Append slack variable(s) to initial guess.
+   x = [x0; s];
+   
+   % Append bounds on slack variable(s), considering that there are no 
+   % upper bounds on slacks.
+   xmin = [xmin; smin];
+else
+   x = x0;
+end
 
 %% Test for Inf, -Inf, and NaN in x.
 if find(x == Inf, 1)
@@ -229,11 +237,20 @@ end
 % Number of equality constraints in g_new(x) = [g(x), h(x) - z].
 % g(x) = 0, h(x) >= 0, z >= 0.
 %TODO: inequality constraints are formulated as h(x) <= 0, see opf_consfcn()
-NEQ = 2*nb + 2*nl;
+
+if withSlacks
+   NEQ = 2*nb + 2*nl;
+else
+   NEQ = 2*nb;
+end
 
 % Number of inequality constraints (xmin .<= x_with_s, x_no_s .<= xmax),
 % where xmin, x_with_s, x_no_s, and xmax are (column) vectors.
-NINEQ = 2*length(x0) + length(s);
+if withSlacks
+   NINEQ = 2*length(x0) + length(s);
+else
+   NINEQ = 2*nl;
+end
 
 myauxdata.idx_nom = idx_nom;
 myauxdata.model = model;
@@ -246,6 +263,7 @@ myauxdata.xmax = xmax;
 myauxdata.NEQ = NEQ;
 myauxdata.NINEQ = NINEQ;
 myauxdata.lenx_no_s = length(x0); % length of x without slack variables.
+myauxdata.withSlacks = withSlacks;
 
 % Allocate memory for the equality multiplier
 y = zeros(ns*NEQ, 1);
@@ -261,6 +279,10 @@ elseif usingEqualityConstrained
    disp('Using EqualityConstrained...')
 elseif usingInequalityConstrained 
    disp('Using InequalityConstrained...')
+end
+
+if withSlacks
+   disp('Using slack variables...')
 end
 
 % No need to check if more than one selected since using if...elseif statements

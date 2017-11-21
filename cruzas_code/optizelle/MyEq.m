@@ -24,6 +24,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       il = myauxdata.il;
       lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
+      withSlacks = myauxdata.withSlacks;
       
       nb = size(mpc.bus, 1);     %% number of buses
       nl = size(mpc.branch, 1);  %% number of branches
@@ -40,13 +41,17 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          [Ybus, Yf, Yt] = makeYbus(mpc.baseMVA, mpc.bus, mpc.branch, cont);
          [hn_local, gn_local] = opf_consfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), om, Ybus, Yf, Yt, mpopt, il);
          
-         % Extract slack variable(s) s from x.
-         % s = [s0, s1, ... , sNS]
-         s = x(lenx_no_s + i*2*nl + (1:2*nl));
+         if withSlacks
+            % Extract slack variable(s) s from x.
+            % s = [s0, s1, ... , sNS]
+            s = x(lenx_no_s + i*2*nl + (1:2*nl));
          
-         % Since h(x) <= 0 in Matpower, -h(x) - s = 0, s >= 0
-         % as required by Optizelle.
-         constr(i*(NEQ) + (1:NEQ)) = [gn_local; -hn_local - s];
+            % Since h(x) <= 0 in Matpower, -h(x) - s = 0, s >= 0
+            % as required by Optizelle.
+            constr(i*(NEQ) + (1:NEQ)) = [gn_local; -hn_local - s];
+         else
+            constr(i*(NEQ) + (1:NEQ)) = gn_local;
+         end
       end
       
       
@@ -73,6 +78,7 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       il = myauxdata.il;
       lenx_no_s = myauxdata.lenx_no_s; % length of x without slack variables.
       NEQ = myauxdata.NEQ; % number of equality constraints.
+      withSlacks = myauxdata.withSlacks;
       
       
       nb = size(mpc.bus, 1);     %% number of buses
@@ -105,12 +111,21 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          dhn = -dhn';
          dgn = dgn';
          
-         %jacobian wrt local variables
-         J(i*NEQ + (1:NEQ), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = [dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);...
-            dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)])];
-         %jacobian wrt global variables
-         J(i*NEQ + (1:NEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = [dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
-            dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)])];
+         if withSlacks
+            %jacobian wrt local variables
+            J(i*NEQ + (1:NEQ), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = [dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);...
+               dhn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)])];
+            %jacobian wrt global variables
+            J(i*NEQ + (1:NEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = [dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);...
+               dhn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)])];
+            
+         else
+            %jacobian wrt local variables
+            J(i*NEQ + (1:NEQ), idx([VAscopf VMscopf(nPVbus_idx) QGscopf PGscopf(REFgen_idx)])) = dgn(:,[VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]);
+            
+            %jacobian wrt global variables
+            J(i*NEQ + (1:NEQ), idx([VMscopf(PVbus_idx) PGscopf(nREFgen_idx)])) = dgn(:, [VMopf(PVbus_idx) PGopf(nREFgen_idx)]);
+         end
          
          % Set corner of Jacobian of this scenario to -Id.
          % Number of rows in dgn is 2*nb; in dhn it is 2*nl.
@@ -129,17 +144,10 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % given the constraints w.r.t. the slack variables are
          % h(x) - s: taking the partial derivative of h(x) - s w.r.t. the slack
          % variables yields the -Id matrix.
-         J(i*NEQ + 2*nb + (1:2*nl), lenx_no_s + i*2*nl + (1:2*nl)) = neg_identity;
+         if withSlacks
+            J(i*NEQ + 2*nb + (1:2*nl), lenx_no_s + i*2*nl + (1:2*nl)) = neg_identity;
+         end
       end
-      
-      % Replace infinite bounds in d with finite bounds.
-      d(d == -Inf) = -1e10;
-      d(d == Inf) = 1e10;
-
-      d(d == -Inf) = -1e10;
-      d(d == Inf) = 1e10;
-      
-%       d(isnan(d)) = 0;
       
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
@@ -149,8 +157,6 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          jvec = J' * d;
          dType = 'dy';
       end
-      
-%       jvec(isnan(jvec)) = 0;
       
       %% Test for Inf, -Inf, and NaN in d.
       if find(d == Inf)
@@ -187,21 +193,14 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       model = myauxdata.model;
       mpopt = myauxdata.mpopt;
       NEQ = myauxdata.NEQ; % number of equality constraints.
+      NINEQ = myauxdata.NINEQ;
+      withSlacks = myauxdata.withSlacks;
       
       nb = size(mpc.bus, 1);          %% number of buses
       nl = size(mpc.branch, 1);       %% number of branches
       ns = size(model.cont, 1);           %% number of scenarios (nominal + ncont)
       
       H = sparse(size(x,1), size(x,1));
-      
-      % Replace infinite bounds in d with finite bounds.
-      dy(dy == -Inf) = -1e10;
-      dy(dy == Inf) = 1e10;
-
-      dy(dy == -Inf) = -1e10;
-      dy(dy == Inf) = 1e10;
-      
-%       dy(isnan(dy)) = 0;
       
       % get indices of REF gen and PV bus
       [REFgen_idx, nREFgen_idx] = model.index.getREFgens(mpc);
@@ -230,8 +229,13 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
          % Hence why we need to extract the lagrange multipliers as
          % follows.
          lam.eqnonlin = dy(i*NEQ + (1:2*nb), 1);
-         lam.ineqnonlin = dy(i*NEQ + 2*nb + (1:2*nl), 1);
          
+         if withSlacks
+            lam.ineqnonlin = dy(i*NEQ + 2*nb + (1:2*nl), 1);
+         else
+            lam.ineqnonlin = zeros(NINEQ, 1);
+         end
+            
          H_local = opf_hessfcn(x(idx([VAscopf VMscopf PGscopf QGscopf])), lam, sigma, om, Ybus, Yf, Yt, mpopt, il);
          
          % H_ll (PG_ref relevant only in nominal case, added to global part)

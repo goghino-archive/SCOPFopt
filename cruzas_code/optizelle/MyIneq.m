@@ -21,7 +21,7 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       % Append constraints for xmin <= x <= xmax.
       xmin = myauxdata.xmin;
       xmax = myauxdata.xmax;
-      
+   
       constr = [x - xmin; 
                 xmax - x(1:myauxdata.lenx_no_s)];
 
