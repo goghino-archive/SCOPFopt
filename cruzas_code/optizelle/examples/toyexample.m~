@@ -1,16 +1,4 @@
-% We consider:
-% f(x) = @(x) sin(x(1)) + sin(x(2))
 % 
-% subject to
-%
-% g(x) = [x(1)^2 = 1;
-%         x(2)^2 = 1]   
-%
-% h(x) = [cos(x(1)) <= 1;
-%         cos(x(2)) <= 1]
-%
-% Where g(x) = 0
-%       h(x) >= 0
 
 % Optimize a simple optimization problem.
 function toyexample()
