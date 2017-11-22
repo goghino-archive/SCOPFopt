@@ -26,7 +26,7 @@ end
 
 % Define a simple equality
 %
-% g(x) = (x(1)-2)^2 + (y(1)-2)^2 = 1
+% g(x) = (x(1) - 2)^2 + (x(2) - 2)^2 = 1
 %
 function self = MyEq()
 
@@ -38,19 +38,19 @@ function self = MyEq()
    self.p = @(x,dx) bs(x, dx);
 
    function res = bs(x, dx)
-      x_size = size(x)
-      dx_size = size(dx)
+%       x_size = size(x)
+%       dx_size = size(dx)
       
       res = [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
    end
     
     % xhat=g'(x)*dy
     self.ps = @(x,dy)  [2*(x(1) - 2);
-                        2*x(2)]' * dy;
+                        2*x(2)] .* dy;
 
     % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) ([2, 0; 
-                            0, 2] * dx)' * dy; 
+                            0, 2] * dx) .* dy; 
 end
 
 % Define inequalities, and bounds on x.
@@ -74,7 +74,7 @@ function self = MyIneq()
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
     self.pps = @(x,dx,dz) ([sin(x(1)), 0
-                           0        , sin(x(2))] * dx)' * dz; 
+                           0        , sin(x(2))] * dx)' .* dz; 
 end
 
 % Actually runs the program
