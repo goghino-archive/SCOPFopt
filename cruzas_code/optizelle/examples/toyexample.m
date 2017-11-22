@@ -9,9 +9,10 @@
 % h(x) = [cos(x(1)) <= 1;
 %         cos(x(2)) <= 1]
 %
-% -10 .<= x .<= 10 
+% xmin .<= x .<= xmax
 %
-% Where g(x) = 0
+% Where g(x) = 0 
+%       and
 %       h(x) >= 0
 
 % Optimize a simple optimization problem.
@@ -107,15 +108,24 @@ function main()
     global Optizelle;
     setupOptizelle();
     
-    NEQ = 2;
-    NINEQ = 6;
+    % Settings.
+    % Toggle on/off for xmin = -inf(size(x0)); xmax = inf(size(x0));
+    infiniteBounds = 1;
+    
+    NEQ = 2;   % Number of equality constraints.
+    NINEQ = 6; % Number of inequality constraints.
 
     % Generate an initial guess 
     x0 = [-0.8; -0.8];
     
     % Define lower and upper bounds xmin .<= x .<= xmax
-    xmin = [-10; -10];
-    xmax = [10; 10];
+    if infiniteBounds
+      xmin = -inf(size(x0));
+      xmax = inf(size(x0));
+    else
+      xmin = -10 * ones(size(x0));
+      xmax =  10 * ones(size(x0));
+    end
     
     % Allocate memory for the equality multiplier 
     y = zeros(NEQ, 1);
