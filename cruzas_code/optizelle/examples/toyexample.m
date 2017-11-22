@@ -26,22 +26,23 @@ end
 
 % Define a simple equality
 %
-% g(x) = x^2 + y^2 = 1
+% g(x) = (x-2)^2 + (y-2)^2 = 1
 %
 function self = MyEq()
 
     % y=g(x) 
-    self.eval = @(x) x(1)^2 + x(2)^2 - 1; 
+    self.eval = @(x) (x(1) - 2)^2 + (x(2) - 2)^2 - 1; 
 
     % y=g'(x)dx
-    self.p = @(x,dx) [2*x(1); 2*x(2)] * dx;
+    self.p = @(x,dx) [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
 
     % xhat=g'(x)*dy
-    self.ps = @(x,dy)  [2*x(1); 2*x(2)]' * dy;
+    self.ps = @(x,dy)  [2*(x(1) - 2);
+                        2*x(2)] .* dy;
 
     % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) ([2, 0; 
-                            0, 2] * dx)' * dy; 
+                            0, 2] * dx) .* dy; 
 end
 
 % Define inequalities, and bounds on x.
@@ -53,17 +54,16 @@ function self = MyIneq()
     self.eval = @(x) 1 - sin(x);
 
     % z=h'(x)dx
-    self.p = @(x,dx) [-cos(x(1)), 0; 
-                      0         , -cos(x(2))] * dx;
+    self.p = @(x,dx) [-cos(x(1)), -cos(x(2))] * dx;
 
     % xhat=h'(x)*dz
-    self.ps = @(x,dz) [-cos(x(1)), 0; 
-                       0         , -cos(x(2))] * dz;
+    self.ps = @(x,dz) [-cos(x(1));
+                       -cos(x(2))]' * dz;
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
-    self.pps = @(x,dx,dz) [sin(x(1)), 0
-                           0        , sin(x(2))] * dx; 
+    self.pps = @(x,dx,dz) ([sin(x(1)), 0
+                           0        , sin(x(2))] * dx)' * dz; 
 end
 
 % Actually runs the program
