@@ -9,67 +9,62 @@ function toyexample()
 end
 
 % Define a simple objective.
-% f(x) = x^2 + y^2
+% f(x) = sin(x(1)) + sin(x(2))
 function self = MyObj()
 
     % Evaluation 
-    self.eval = @(x) x(1)^2 + x(2)^2;
+    self.eval = @(x) sin(x(1)) + sin(x(2));
 
     % Gradient
-    self.grad = @(x) [2*x(1);
-                      2*x(2)];
+    self.grad = @(x) [cos(x(1));
+                      cos(x(2))];
 
     % Hessian-vector product
-    self.hessvec = @(x,dx) [2, 0; 
-                            0, 2] * dx;
+    self.hessvec = @(x,dx) [-sin(x(1)),        0; 
+                                   0, -sin(x(2))] * dx;
 end
 
 % Define a simple equality
 %
-% g(x) = (x(1) - 2)^2 + (x(2) - 2)^2 = 1
-%
+% g(x) = [x(1)^2 = 1;
+%         x(2)^2 = 1]         
+% Optizelle  requires g(x) = 0, so we transform g(x) accordingly.
 function self = MyEq()
 
     % y=g(x) 
-    self.eval = @(x) (x(1) - 2)^2 + (x(2) - 2)^2 - 1; 
+    self.eval = @(x) [x(1)^2 - 1;
+                      x(2)^2 - 1]; 
 
-    % y=g'(x)dx
-%     self.p = @(x,dx) [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
-   self.p = @(x,dx) bs(x, dx);
-
-   function res = bs(x, dx)
-%       x_size = size(x)
-%       dx_size = size(dx)
-      
-      res = [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
-   end
+    % y=g'(x)dx (Jacobian * dx)
+   self.p = @(x,dx) [2*x(1),    0;
+                        0, 2*x(2)] * dx;
     
-    % xhat=g'(x)*dy
-    self.ps = @(x,dy)  [2*(x(1) - 2);
-                        2*x(2)] .* dy;
+    % xhat=g'(x)*dy (Jacobian' * dy)
+    self.ps = @(x,dy) [2*x(1),    0;
+                        0,   2*x(2)]' * dy;
 
-    % xhat=(g''(x)dx)*dy
+    % xhat=(g''(x)dx)*dy (Partial derivatives of Jacobian * dx)
     self.pps = @(x,dx,dy) ([2, 0; 
-                            0, 2] * dx) .* dy; 
+                            0, 2] * dx)' * dy; 
 end
 
 % Define inequalities, and bounds on x.
 %
-% h(x) = [sin(x(1)) <= 1; 
-%         sin(x(2)) <= 1;]
+% h(x) = [cos(x(1)) <= 1;
+%         cos(x(2)) <= 1]
 function self = MyIneq()
 
     % z=h(x) 
-    self.eval = @(x) [1 - sin(x(1));
-                      1 - sin(x(2))];
+    self.eval = @(x) [cos(x(1));
+                      cos(x(2))];
 
     % z=h'(x)dx
-    self.p = @(x,dx) [-cos(x(1)), 0;
-                      0         , -cos(x(2))] * dx;
+    self.p = @(x,dx) [-sin(x(1)),          0;
+                                0, -sin(x(2))] * dx;
 
     % xhat=h'(x)*dz
-    self.ps = @(x,dz) [-cos(x(1)), 0;
-                      0         , -cos(x(2))] .* dz;
+    self.ps = @(x,dz) [-sin(x(1)),          0;
+                                0, -sin(x(2))]' * dz;
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
@@ -84,10 +79,10 @@ function main()
     setupOptizelle();
 
     % Generate an initial guess 
-    x = [0; 0];
+    x = [-0.5; -0.5];
     
     % Allocate memory for the equality multiplier 
-    y = zeros(1, 1);
+    y = zeros(2, 1);
 
     % Allocate memory for the inequality multiplier 
     z = zeros(2, 1);
