@@ -77,19 +77,22 @@ function main()
     % Grab the Optizelle library
     global Optizelle;
     setupOptizelle();
+    
+    NEQ = 2;
+    NINEQ = 2;
 
     % Generate an initial guess 
-    x = [-0.5; -0.5];
+    x0 = [-0.5; -0.5];
     
     % Allocate memory for the equality multiplier 
-    y = zeros(2, 1);
+    y = zeros(NEQ, 1);
 
     % Allocate memory for the inequality multiplier 
-    z = zeros(2, 1);
+    z = zeros(NINEQ, 1);
     
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x0,y,z);
 
     % Create a bundle of functions
     fns = Optizelle.Constrained.Functions.t;
