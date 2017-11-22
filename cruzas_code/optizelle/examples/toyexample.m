@@ -69,12 +69,12 @@ function self = MyIneq()
 
     % xhat=h'(x)*dz
     self.ps = @(x,dz) [-cos(x(1)), 0;
-                      0         , -cos(x(2))]' * dz;
+                      0         , -cos(x(2))] .* dz;
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
     self.pps = @(x,dx,dz) ([sin(x(1)), 0
-                           0        , sin(x(2))] * dx)' .* dz; 
+                           0        , sin(x(2))] * dx) .* dz; 
 end
 
 % Actually runs the program
@@ -88,10 +88,10 @@ function main()
     x = [0; 0];
     
     % Allocate memory for the equality multiplier 
-    y = zeros(size(x));
+    y = zeros(1, 1);
 
     % Allocate memory for the inequality multiplier 
-    z = zeros(size(x));
+    z = zeros(2, 1);
     
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
