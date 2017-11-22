@@ -9,6 +9,8 @@
 % h(x) = [cos(x(1)) <= 1;
 %         cos(x(2)) <= 1]
 %
+% -10 .<= x .<= 10 
+%
 % Where g(x) = 0
 %       h(x) >= 0
 
@@ -65,20 +67,37 @@ end
 % Define inequalities, and bounds on x.
 %
 % h(x) = [cos(x(1)) <= 1;
-%         cos(x(2)) <= 1]
+%         cos(x(2)) <= 1;
+%         x(1)      >= -10;
+%         x(1)      <= 10;
+%         x(2)      >= -10;
+%         x(2)      <= 10;
+% Optizelle  requires h(x) >= 0, so we transform g(x) accordingly.
 function self = MyIneq()
 
     % z=h(x) 
     self.eval = @(x) [cos(x(1));
-                      cos(x(2))];
+                      cos(x(2));
+                      x(1) + 10;
+                      10 - x(1);
+                      x(2) + 10;
+                      10 - x(2)];
 
     % z=h'(x)dx
-    self.p = @(x,dx) [-sin(x(1)),          0;
-                                0, -sin(x(2))] * dx;
+    self.p = @(x,dx) [  -sin(x(1)),          0;
+                                 0, -sin(x(2));
+                                 1, 0;
+                                -1, 0;
+                                 0, 1;
+                                 0, -1] * dx;
 
     % xhat=h'(x)*dz
     self.ps = @(x,dz) [-sin(x(1)),          0;
-                                0, -sin(x(2))]' * dz;
+                                0, -sin(x(2));
+                                0,          0;
+                                0,          0;
+                                0,          0;
+                                0,          0]' * dz;
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
@@ -93,10 +112,10 @@ function main()
     setupOptizelle();
     
     NEQ = 2;
-    NINEQ = 2;
+    NINEQ = 6;
 
     % Generate an initial guess 
-    x0 = [-0.5; -0.5];
+    x0 = [-0.5; -0.8];
     
     % Allocate memory for the equality multiplier 
     y = zeros(NEQ, 1);
