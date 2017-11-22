@@ -26,7 +26,7 @@ end
 
 % Define a simple equality
 %
-% g(x) = (x-2)^2 + (y-2)^2 = 1
+% g(x) = (x(1)-2)^2 + (y(1)-2)^2 = 1
 %
 function self = MyEq()
 
@@ -34,31 +34,42 @@ function self = MyEq()
     self.eval = @(x) (x(1) - 2)^2 + (x(2) - 2)^2 - 1; 
 
     % y=g'(x)dx
-    self.p = @(x,dx) [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
+%     self.p = @(x,dx) [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
+   self.p = @(x,dx) bs(x, dx);
 
+   function res = bs(x, dx)
+      x_size = size(x)
+      dx_size = size(dx)
+      
+      res = [2*(x(1) - 2), 2*(x(2) - 2)] * dx;
+   end
+    
     % xhat=g'(x)*dy
     self.ps = @(x,dy)  [2*(x(1) - 2);
-                        2*x(2)] .* dy;
+                        2*x(2)]' * dy;
 
     % xhat=(g''(x)dx)*dy
     self.pps = @(x,dx,dy) ([2, 0; 
-                            0, 2] * dx) .* dy; 
+                            0, 2] * dx)' * dy; 
 end
 
 % Define inequalities, and bounds on x.
 %
-% h(x) = sin(x) <= 1
+% h(x) = [sin(x(1)) <= 1; 
+%         sin(x(2)) <= 1;]
 function self = MyIneq()
 
     % z=h(x) 
-    self.eval = @(x) 1 - sin(x);
+    self.eval = @(x) [1 - sin(x(1));
+                      1 - sin(x(2))];
 
     % z=h'(x)dx
-    self.p = @(x,dx) [-cos(x(1)), -cos(x(2))] * dx;
+    self.p = @(x,dx) [-cos(x(1)), 0;
+                      0         , -cos(x(2))] * dx;
 
     % xhat=h'(x)*dz
-    self.ps = @(x,dz) [-cos(x(1));
-                       -cos(x(2))]' * dz;
+    self.ps = @(x,dz) [-cos(x(1)), 0;
+                      0         , -cos(x(2))]' * dz;
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
@@ -77,10 +88,10 @@ function main()
     x = [0; 0];
     
     % Allocate memory for the equality multiplier 
-    y = zeros(2, 1);
+    y = zeros(size(x));
 
     % Allocate memory for the inequality multiplier 
-    z = zeros(2, 1);
+    z = zeros(size(x));
     
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
