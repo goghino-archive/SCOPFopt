@@ -73,8 +73,7 @@ function self = MyIneq()
 
     % xhat=(h''(x)dx)*dz
     % Since all constraints are affine, we have h''(x) = 0.
-    self.pps = @(x,dx,dz) ([sin(x(1)), 0
-                           0        , sin(x(2))] * dx) .* dz; 
+    self.pps = @(x,dx,dz) sparse(length(x), length(x)); 
 end
 
 % Actually runs the program
