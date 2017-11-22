@@ -68,28 +68,24 @@ end
 %
 % h(x) = [cos(x(1)) <= 1;
 %         cos(x(2)) <= 1;
-%         x(1)      >= -10;
-%         x(1)      <= 10;
-%         x(2)      >= -10;
-%         x(2)      <= 10;
+%         x(1)      >= xmin(1);
+%         x(2)      >= xmin(2);
+%         x(1)      <= xmax(1);
+%         x(2)      <= xmax(2);
 % Optizelle  requires h(x) >= 0, so we transform g(x) accordingly.
-function self = MyIneq()
+function self = MyIneq(myauxdata)
 
     % z=h(x) 
     self.eval = @(x) [cos(x(1));
                       cos(x(2));
-                      x(1) + 10;
-                      10 - x(1);
-                      x(2) + 10;
-                      10 - x(2)];
+                      x - myauxdata.xmin;
+                      myauxdata.xmax - x];
 
     % z=h'(x)dx
     self.p = @(x,dx) [  -sin(x(1)),          0;
                                  0, -sin(x(2));
-                                 1, 0;
-                                -1, 0;
-                                 0, 1;
-                                 0, -1] * dx;
+                                 sparse(eye(length(x)));
+                                -sparse(eye(length(x)))] * dx;
 
     % xhat=h'(x)*dz
     self.ps = @(x,dz) [-sin(x(1)),          0;
@@ -115,13 +111,20 @@ function main()
     NINEQ = 6;
 
     % Generate an initial guess 
-    x0 = [-0.5; -0.8];
+    x0 = [-0.8; -0.8];
+    
+    % Define lower and upper bounds xmin .<= x .<= xmax
+    xmin = [-10; -10];
+    xmax = [10; 10];
     
     % Allocate memory for the equality multiplier 
     y = zeros(NEQ, 1);
 
     % Allocate memory for the inequality multiplier 
     z = zeros(NINEQ, 1);
+    
+    myauxdata.xmin = xmin;
+    myauxdata.xmax = xmax;
     
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
@@ -131,7 +134,7 @@ function main()
     fns = Optizelle.Constrained.Functions.t;
     fns.f = MyObj();
     fns.g = MyEq();
-    fns.h = MyIneq();
+    fns.h = MyIneq(myauxdata);
 
     % Solve the optimization problem
     state = Optizelle.Constrained.Algorithms.getMin( ...
