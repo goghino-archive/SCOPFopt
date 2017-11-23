@@ -285,6 +285,12 @@ function main()
     bigButNotInfiniteBounds = 0;
     verbose = 1;
 
+    if infiniteBounds
+      disp('Using infinite bounds...')
+    elseif bigButNotInfiniteBounds
+       disp('Using big but not infinite bounds...')
+    end
+    
     NEQ = 2;   % Number of equality constraints.
     NINEQ = 6; % Number of inequality constraints.
 
