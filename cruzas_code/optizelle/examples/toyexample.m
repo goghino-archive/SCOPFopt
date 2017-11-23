@@ -282,8 +282,8 @@ function main()
     
     % Settings...
     infiniteBounds = 0;
-    bigButNotInfiniteBounds = 0;
-    verbose = 1;
+    bigButNotInfiniteBounds = 0; 
+    verbose = 1;  % print message when Inf, -Inf, or NaN found
 
     if infiniteBounds
       disp('Using infinite bounds...')
@@ -295,7 +295,7 @@ function main()
     NINEQ = 6; % Number of inequality constraints.
 
     % Generate an initial guess 
-    x0 = [-0.8; -0.8];
+    x0 = [-0.4; -0.4];
     
     % Define lower and upper bounds xmin .<= x .<= xmax
     if infiniteBounds
