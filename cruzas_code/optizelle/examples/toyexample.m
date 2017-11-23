@@ -110,7 +110,8 @@ function main()
     
     % Settings.
     % Toggle on/off for xmin = -inf(size(x0)); xmax = inf(size(x0));
-    infiniteBounds = 1;
+    infiniteBounds = 0;
+    bigButNotInfiniteBounds = 1;
     
     NEQ = 2;   % Number of equality constraints.
     NINEQ = 6; % Number of inequality constraints.
@@ -122,6 +123,9 @@ function main()
     if infiniteBounds
       xmin = -inf(size(x0));
       xmax = inf(size(x0));
+    elseif bigButNotInfiniteBounds 
+       xmin = -1e20 * ones(size(x0));
+       xmax = 1e20 * ones(size(x0));
     else
       xmin = -10 * ones(size(x0));
       xmax =  10 * ones(size(x0));
