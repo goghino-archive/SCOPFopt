@@ -347,4 +347,18 @@ function main()
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e,%e,%e)\n', state.x(1), state.x(2));
+    
+    myTol = 1e-6; % tolerance value
+    
+    % Assert that all equality constraints are satisfied
+    assert(abs(state.x(1)^2 - 1) < myTol)
+    assert(abs(state.x(2)^2 - 1) < myTol)
+    
+    % Assert that all inequality constraints are satisfied
+    assert(cos(state.x(1)) <= 1);
+    assert(cos(state.x(2)) <= 1);
+    assert(state.x(1) >= xmin(1))
+    assert(state.x(2) >= xmin(2));
+    assert(state.x(1) <= xmax(1))
+    assert(state.x(2) <= xmax(2));
 end
