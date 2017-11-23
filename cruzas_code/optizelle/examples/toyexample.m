@@ -281,7 +281,10 @@ function main()
     setupOptizelle();
     
     % Settings...
-    infiniteBounds = 0;
+    % infiniteBounds and bigButNotInfiniteBounds can be left as 0, as
+    % bounds of [-10; -10] for xmin and [10; 10] for xmax will be chosen in
+    % that case.
+    infiniteBounds = 0; 
     bigButNotInfiniteBounds = 0; 
     verbose = 1;  % print message when Inf, -Inf, or NaN found
 
