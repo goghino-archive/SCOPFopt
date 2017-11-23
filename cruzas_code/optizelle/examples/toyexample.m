@@ -49,29 +49,29 @@ function self = MyObj()
       hessvec = H * dx;
                                 
       %% Test for Inf, -Inf, and NaN in dx.
-      if find(d == Inf)
-         fprintf('%s: Inf found in dx', functionIdentifier);
+      if find(dx == Inf)
+         fprintf('%s: Inf found in dx\n', functionIdentifier);
       end
       
-      if find(d == -Inf)
-         fprintf('%s: -Inf found in dx', functionIdentifier);
+      if find(dx == -Inf)
+         fprintf('%s: -Inf found in dx\n', functionIdentifier);
       end
       
-      if find(isnan(d))
-         fprintf('%s: NaN found in dx', functionIdentifier);
+      if find(isnan(dx))
+         fprintf('%s: NaN found in dx\n', functionIdentifier);
       end
       
       %% Test for Inf, -Inf, and NaN in jvec.
       if find(hessvec == Inf, 1)
-         fprintf('%s: Inf found in hessvec', functionIdentifier);
+         fprintf('%s: Inf found in hessvec\n', functionIdentifier);
       end
       
       if find(hessvec == -Inf, 1)
-         fprintf('%s: -Inf found in hessvec', functionIdentifier);
+         fprintf('%s: -Inf found in hessvec\n', functionIdentifier);
       end
       
       if find(isnan(hessvec), 1)
-         fprintf('%s: NaN found in hessvec', functionIdentifier);
+         fprintf('%s: NaN found in hessvec\n', functionIdentifier);
       end
    end
 end
@@ -97,7 +97,7 @@ function self = MyEq(myauxdata)
     self.pps = @(x,dx,dy) MyHessvec(x, dx, dy, myauxdata);
                          
     % Helper functions.
-   function jacobvec = MyJacobvec(x, d, myauxdata)
+   function jvec = MyJacobvec(x, d, myauxdata)
       functionIdentifier = '[MyEq] MyJacobvec';
       
       % Define Jacobian matrix.
@@ -107,9 +107,9 @@ function self = MyEq(myauxdata)
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          dType = 'dx';
-         jacobvec = J * d;
+         jvec = J * d;
       elseif (size(d, 1) == myauxdata.NEQ) % case: d == dy
-         jacobvec = J' * d;
+         jvec = J' * d;
          dType = 'dy';
       end
       
@@ -128,15 +128,15 @@ function self = MyEq(myauxdata)
       
       %% Test for Inf, -Inf, and NaN in jvec.
       if find(jvec == Inf, 1)
-         fprintf('%s: Inf found in jvec', functionIdentifier)
+         fprintf('%s: Inf found in jvec\n', functionIdentifier)
       end
       
       if find(jvec == -Inf, 1)
-         fprintf('%s: -Inf found in jvec', functionIdentifier)
+         fprintf('%s: -Inf found in jvec\n', functionIdentifier)
       end
       
       if find(isnan(jvec), 1)
-         fprintf('%s: NaN found in jvec', functionIdentifier)
+         fprintf('%s: NaN found in jvec\n', functionIdentifier)
       end
    end
 
@@ -192,7 +192,7 @@ function main()
     % Settings.
     % Toggle on/off for xmin = -inf(size(x0)); xmax = inf(size(x0));
     infiniteBounds = 0;
-    bigButNotInfiniteBounds = 1;
+    bigButNotInfiniteBounds = 0;
     
     NEQ = 2;   % Number of equality constraints.
     NINEQ = 6; % Number of inequality constraints.
@@ -232,11 +232,11 @@ function main()
     fns.h = MyIneq(myauxdata);
 
     % Solve the optimization problem
-    tic;
+%     tic
     state = Optizelle.Constrained.Algorithms.getMin( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
         fns,state);
-    myTime = toc
+%     toc
      
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
