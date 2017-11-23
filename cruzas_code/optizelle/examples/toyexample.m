@@ -287,6 +287,7 @@ function main()
     infiniteBounds = 0; 
     bigButNotInfiniteBounds = 0; 
     verbose = 1;  % print message when Inf, -Inf, or NaN found
+    myTol = 1e-12; % tolerance value for assertion of solution
 
     if infiniteBounds
       disp('Using infinite bounds...')
@@ -347,8 +348,6 @@ function main()
 
     % Print out the final answer
     fprintf('The optimal point is: (%e,%e,%e,%e)\n', state.x(1), state.x(2));
-    
-    myTol = 1e-6; % tolerance value
     
     % Assert that all equality constraints are satisfied
     assert(abs(state.x(1)^2 - 1) < myTol)
