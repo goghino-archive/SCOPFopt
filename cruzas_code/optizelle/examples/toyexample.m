@@ -84,11 +84,16 @@ end
 % g(x) = [x(1)^2 = 1;
 %         x(2)^2 = 1]         
 % Optizelle  requires g(x) = 0, so we transform g(x) accordingly.
+% 
+% If using slack variables, we have:
+% g(x) = [x(1)^2 = 1;
+%         x(2)^2 = 1;
+%         cos(x(1)) + s = 1;
+%         cos(x(2)) + s = 1;] 
 function self = MyEq(myauxdata)
 
     % y=g(x) 
-    self.eval = @(x) [x(1)^2 - 1;
-                      x(2)^2 - 1]; 
+    self.eval = @(x) MyEval(x, myauxdata);
 
     % y=g'(x)dx (Jacobian * dx)
     self.p = @(x,dx) MyJacobvec(x, dx, myauxdata);
@@ -100,6 +105,17 @@ function self = MyEq(myauxdata)
     self.pps = @(x,dx,dy) MyHessvec(x, dx, dy, myauxdata);
                          
     %% Helper functions.
+   function res = MyEval(x, myauxdata)
+      gx = [x(1)^2 - 1;
+             x(2)^2 - 1];
+        
+      if myauxdata.withSlacks         
+         res = 0;
+      else
+         res = gx;
+      end
+   end
+    
    function jvec = MyJacobvec(x, d, myauxdata)
       functionIdentifier = '[MyEq] MyJacobvec';
       
@@ -206,11 +222,12 @@ end
 %         x(1)      <= xmax(1);
 %         x(2)      <= xmax(2);
 % Optizelle  requires h(x) >= 0, so we transform g(x) accordingly.
+% Note, the "inequality constraints" xmin .<= x .<= xmax.
 function self = MyIneq(myauxdata)
 
     % z=h(x) 
-    self.eval = @(x) [cos(x(1));
-                      cos(x(2));
+    self.eval = @(x) [1 - cos(x(1));
+                      1 - cos(x(2));
                       x - myauxdata.xmin;
                       myauxdata.xmax - x];
 
@@ -229,8 +246,8 @@ function self = MyIneq(myauxdata)
       functionIdentifier = '[MyIneq] MyJacobvec';
       
       % Define Jacobian matrix.
-      J = [  -sin(x(1)),          0;
-                      0, -sin(x(2));
+      J = [  sin(x(1)),          0;
+                      0, sin(x(2));
              sparse(eye(length(x)));
             -sparse(eye(length(x)))];
       
@@ -285,8 +302,9 @@ function main()
     % bounds of [-10; -10] for xmin and [10; 10] for xmax will be chosen in
     % that case.
     infiniteBounds = 0; 
-    bigButNotInfiniteBounds = 0; 
-    verbose = 1;  % print message when Inf, -Inf, or NaN found
+    bigButNotInfiniteBounds = 1; 
+    withSlacks = 0;
+    verbose = 0;  % print message when Inf, -Inf, or NaN found
     myTol = 1e-12; % tolerance value for assertion of solution
 
     if infiniteBounds
@@ -294,12 +312,20 @@ function main()
     elseif bigButNotInfiniteBounds
        disp('Using big but not infinite bounds...')
     end
-    
-    NEQ = 2;   % Number of equality constraints.
-    NINEQ = 6; % Number of inequality constraints.
-
-    % Generate an initial guess 
+   
+    % Generate an initial guess.
     x0 = [-0.4; -0.4];
+   
+    % Slack variables, corresponding to number of inequality constraints.
+    s = zeros(2, 1);
+    
+    if withSlacks
+       NEQ = 4;
+       NINEQ = 2*length(x0) + length(s);
+    else
+      NEQ = 2;   % Number of equality constraints.
+      NINEQ = 2 + 2*length(x0); % Number of inequality constraints.
+    end
     
     % Define lower and upper bounds xmin .<= x .<= xmax
     if infiniteBounds
@@ -313,9 +339,15 @@ function main()
       xmax =  10 * ones(size(x0));
     end
     
+    if withSlacks
+       % Note, no upper bounds on slack variables, as per Optizelle
+       % documentation.
+       x0 = [x0; s];
+       xmin = [xmin; zeros(size(s))];
+    end
+    
     % Allocate memory for the equality multiplier 
     y = zeros(NEQ, 1);
-
     % Allocate memory for the inequality multiplier 
     z = zeros(NINEQ, 1);
     
@@ -323,6 +355,7 @@ function main()
     myauxdata.xmax = xmax;
     myauxdata.NEQ = NEQ;
     myauxdata.NINEQ = NINEQ;
+    myauxdata.withSlacks = withSlacks;
     myauxdata.verbose = verbose; % print out all information for testing
     
     % Create an optimization state
@@ -330,7 +363,7 @@ function main()
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x0,y,z);
 
     % Create a bundle of functions
-    fns = Optizelle.Constrained.Functions.t;
+    fns = Optizelle.Constrained.Functions.t; 
     fns.f = MyObj(myauxdata);
     fns.g = MyEq(myauxdata);
     fns.h = MyIneq(myauxdata);
