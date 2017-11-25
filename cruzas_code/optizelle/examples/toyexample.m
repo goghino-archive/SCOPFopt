@@ -146,7 +146,7 @@ function self = MyEq(myauxdata)
                 0, 2*x(2)];
              
       if myauxdata.withSlacks 
-         tmp_J = sparse(zeros(length(x)));
+         tmp_J = sparse(zeros(2, length(x)));
          
          tmp_J(1:2, 1:2) = J;
          
