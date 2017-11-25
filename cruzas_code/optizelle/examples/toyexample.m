@@ -33,19 +33,35 @@ function self = MyObj(myauxdata)
     self.eval = @(x) sin(x(1)) + sin(x(2));
 
     % Gradient
-    self.grad = @(x) [cos(x(1));
-                      cos(x(2))];
+    self.grad = @(x) MyGrad(x, myauxdata);
 
     % Hessian-vector product
     self.hessvec = @(x,dx) MyHessvec(x,dx, myauxdata);
                                 
     %% Helper functions
+   function grad = MyGrad(x, myauxdata)
+      grad = [cos(x(1));
+              cos(x(2))];
+      
+      if myauxdata.withSlacks
+         grad = [grad; 0; 0];
+      end
+   end
+    
    function hessvec = MyHessvec(x, dx, myauxdata)
       functionIdentifier = '[MyObj] MyHessvec';
       
       % Define Hessian matrix.
       H = [-sin(x(1)),        0; 
                     0, -sin(x(2))];
+                 
+      if myauxdata.withSlacks
+         tmp_H = sparse(zeros(length(x)));
+         
+         tmp_H(1:2, 1:2) = H;
+         
+         H = tmp_H;
+      end
                  
       hessvec = H * dx;
                           
@@ -109,8 +125,14 @@ function self = MyEq(myauxdata)
       gx = [x(1)^2 - 1;
              x(2)^2 - 1];
         
-      if myauxdata.withSlacks         
-         res = 0;
+      if myauxdata.withSlacks
+         hx = [1 - cos(x(1));
+               1 - cos(x(2))];
+            
+         % Extract slack variables.
+         s = [x(3); x(4)];
+            
+         res = [gx; hx - s];
       else
          res = gx;
       end
@@ -120,17 +142,28 @@ function self = MyEq(myauxdata)
       functionIdentifier = '[MyEq] MyJacobvec';
       
       % Define Jacobian matrix.
-      J = [2*x(1),    0;
-                0, 2*x(2)];
+      J = [2*x(1),      0,  0,  0;
+                0, 2*x(2),  0,  0];
+             
+      if myauxdata.withSlacks 
+         dhx = [sin(x(1)),          0,  -1,  0;
+                      0,    sin(x(2)),  0,  -1];
+         J = [J; dhx];
+      end
       
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          dType = 'dx';
+%          disp(dType)
+         
          jvec = J * d;
       elseif (size(d, 1) == myauxdata.NEQ) % case: d == dy
-         jvec = J' * d;
          dType = 'dy';
+%          disp(dType)
+         
+         jvec = J' * d;
       end
+      
       
       if myauxdata.verbose
          %% Test for Inf, -Inf, and NaN in d.
@@ -167,6 +200,17 @@ function self = MyEq(myauxdata)
       % Define Hessian matrix.
       H = [2, 0; 
            0, 2];
+        
+      if myauxdata.withSlacks
+         tmp_H = sparse(zeros(length(x)));
+         
+         ddhx = [cos(x(1)),      0;
+                        0, cos(x(2))];
+         
+         tmp_H(1:2, 1:2) = H + ddhx;
+         
+         H = tmp_H;
+      end
         
       hessvec = (H * dx)' * dy; 
       
@@ -226,10 +270,7 @@ end
 function self = MyIneq(myauxdata)
 
     % z=h(x) 
-    self.eval = @(x) [1 - cos(x(1));
-                      1 - cos(x(2));
-                      x - myauxdata.xmin;
-                      myauxdata.xmax - x];
+    self.eval = @(x) MyEval(x, myauxdata);
 
     % z=h'(x)dx
     self.p = @(x,dx) MyJacobvec(x, dx, myauxdata);
@@ -242,15 +283,41 @@ function self = MyIneq(myauxdata)
     self.pps = @(x,dx,dz) sparse(length(x), length(x)); 
     
     %% Helper functions.
+   function res = MyEval(x, myauxdata)
+      
+      if myauxdata.withSlacks
+         res = [x - myauxdata.xmin;
+                myauxdata.xmax - [x(1); x(2)]];
+      else
+            res = [1 - cos(x(1));
+            1 - cos(x(2));
+            x - myauxdata.xmin;
+            myauxdata.xmax - x];
+      end
+   end
+    
     function jvec = MyJacobvec(x, d, myauxdata)
       functionIdentifier = '[MyIneq] MyJacobvec';
       
-      % Define Jacobian matrix.
-      J = [  sin(x(1)),          0;
-                      0, sin(x(2));
-             sparse(eye(length(x)));
-            -sparse(eye(length(x)))];
-      
+      if myauxdata.withSlacks
+         % Jacobian for x - xmin.
+         Jmin = sparse(eye(length(x)));
+         
+         % Jacobian for xmax - x_no_s.
+         Jmax = sparse(zeros(2, length(x)));
+         
+         Jmax(1:2, 1:2) = -eye(2);
+         
+         J = [Jmin; Jmax];
+              
+      else
+         % Define Jacobian matrix.
+         J = [  sin(x(1)),          0;
+                        0, sin(x(2));
+                sparse(eye(length(x)));
+               -sparse(eye(length(x)))];
+      end
+    
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          dType = 'dx';
@@ -303,7 +370,7 @@ function main()
     % that case.
     infiniteBounds = 0; 
     bigButNotInfiniteBounds = 1; 
-    withSlacks = 0;
+    withSlacks = 1;
     verbose = 0;  % print message when Inf, -Inf, or NaN found
     myTol = 1e-12; % tolerance value for assertion of solution
 
@@ -324,7 +391,7 @@ function main()
        NINEQ = 2*length(x0) + length(s);
     else
       NEQ = 2;   % Number of equality constraints.
-      NINEQ = 2 + 2*length(x0); % Number of inequality constraints.
+      NINEQ = 2*length(x0) + 2; % Number of inequality constraints.
     end
     
     % Define lower and upper bounds xmin .<= x .<= xmax
@@ -350,6 +417,10 @@ function main()
     y = zeros(NEQ, 1);
     % Allocate memory for the inequality multiplier 
     z = zeros(NINEQ, 1);
+    
+    x0_size = size(x0)
+    y_size = size(y)
+    z_size = size(z)
     
     myauxdata.xmin = xmin;
     myauxdata.xmax = xmax;
