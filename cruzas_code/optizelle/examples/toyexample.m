@@ -142,10 +142,16 @@ function self = MyEq(myauxdata)
       functionIdentifier = '[MyEq] MyJacobvec';
       
       % Define Jacobian matrix.
-      J = [2*x(1),      0,  0,  0;
-                0, 2*x(2),  0,  0];
+      J = [2*x(1),      0;
+                0, 2*x(2)];
              
       if myauxdata.withSlacks 
+         tmp_J = sparse(zeros(length(x)));
+         
+         tmp_J(1:2, 1:2) = J;
+         
+         J = tmp_J;
+         
          dhx = [sin(x(1)),          0,  -1,  0;
                       0,    sin(x(2)),  0,  -1];
          J = [J; dhx];
@@ -154,12 +160,12 @@ function self = MyEq(myauxdata)
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          dType = 'dx';
-%          disp(dType)
-         
+         disp(dType)
+
          jvec = J * d;
       elseif (size(d, 1) == myauxdata.NEQ) % case: d == dy
          dType = 'dy';
-%          disp(dType)
+         disp(dType)
          
          jvec = J' * d;
       end
@@ -290,9 +296,9 @@ function self = MyIneq(myauxdata)
                 myauxdata.xmax - [x(1); x(2)]];
       else
             res = [1 - cos(x(1));
-            1 - cos(x(2));
-            x - myauxdata.xmin;
-            myauxdata.xmax - x];
+                   1 - cos(x(2));
+                   x - myauxdata.xmin;
+                   myauxdata.xmax - x];
       end
    end
     
@@ -324,7 +330,7 @@ function self = MyIneq(myauxdata)
          jvec = J * d;
       elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz
          jvec = J' * d;
-         dType = 'd';
+         dType = 'dz';
       end
       
       if myauxdata.verbose
@@ -386,14 +392,6 @@ function main()
     % Slack variables, corresponding to number of inequality constraints.
     s = zeros(2, 1);
     
-    if withSlacks
-       NEQ = 4;
-       NINEQ = 2*length(x0) + length(s);
-    else
-      NEQ = 2;   % Number of equality constraints.
-      NINEQ = 2*length(x0) + 2; % Number of inequality constraints.
-    end
-    
     % Define lower and upper bounds xmin .<= x .<= xmax
     if infiniteBounds
       xmin = -inf(size(x0));
@@ -409,8 +407,18 @@ function main()
     if withSlacks
        % Note, no upper bounds on slack variables, as per Optizelle
        % documentation.
-       x0 = [x0; s];
+       x = [x0; s];
        xmin = [xmin; zeros(size(s))];
+    else
+       x = x0;
+    end
+    
+    if withSlacks
+       NEQ = 4
+       NINEQ = 2*length(x0) + length(s)
+    else
+      NEQ = 2   % Number of equality constraints.
+      NINEQ = 2*length(x0) + 2 % Number of inequality constraints.
     end
     
     % Allocate memory for the equality multiplier 
@@ -418,7 +426,7 @@ function main()
     % Allocate memory for the inequality multiplier 
     z = zeros(NINEQ, 1);
     
-    x0_size = size(x0)
+    x_size = size(x)
     y_size = size(y)
     z_size = size(z)
     
@@ -431,7 +439,7 @@ function main()
     
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
-        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x0,y,z);
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
 
     % Create a bundle of functions
     fns = Optizelle.Constrained.Functions.t; 
