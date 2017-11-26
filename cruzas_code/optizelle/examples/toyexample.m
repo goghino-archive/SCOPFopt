@@ -79,7 +79,7 @@ function self = MyObj(myauxdata)
             fprintf('%s: NaN found in dx\n', functionIdentifier);
          end
          
-         %% Test for Inf, -Inf, and NaN in jvec.
+         %% Test for Inf, -Inf, and NaN in hessvec.
          if find(hessvec == Inf, 1)
             fprintf('%s: Inf found in hessvec\n', functionIdentifier);
          end
@@ -122,8 +122,8 @@ function self = MyEq(myauxdata)
                          
     %% Helper functions.
    function res = MyEval(x, myauxdata)
-      gx = [x(1)^2 - 1;
-             x(2)^2 - 1];
+      gx = [1 - x(1)^2;
+            1 - x(2)^2];
         
       if myauxdata.withSlacks
          hx = [1 - cos(x(1));
@@ -142,11 +142,11 @@ function self = MyEq(myauxdata)
       functionIdentifier = '[MyEq] MyJacobvec';
       
       % Define Jacobian matrix.
-      J = [2*x(1),      0;
-                0, 2*x(2)];
+      J = [-2*x(1),      0;
+                0, -2*x(2)];
              
       if myauxdata.withSlacks 
-         tmp_J = sparse(zeros(2, length(x)));
+         tmp_J = sparse(zeros(size(J, 1), length(x)));
          
          tmp_J(1:2, 1:2) = J;
          
@@ -160,16 +160,15 @@ function self = MyEq(myauxdata)
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          dType = 'dx';
-         disp(dType)
+%          disp(dType)
 
          jvec = J * d;
       elseif (size(d, 1) == myauxdata.NEQ) % case: d == dy
          dType = 'dy';
-         disp(dType)
+%          disp(dType)
          
          jvec = J' * d;
       end
-      
       
       if myauxdata.verbose
          %% Test for Inf, -Inf, and NaN in d.
@@ -204,8 +203,8 @@ function self = MyEq(myauxdata)
       functionIdentifier = '[MyEq] MyHessvec';
       
       % Define Hessian matrix.
-      H = [2, 0; 
-           0, 2];
+      H = [-2, 0; 
+           0, -2];
         
       if myauxdata.withSlacks
          tmp_H = sparse(zeros(length(x)));
@@ -312,7 +311,7 @@ function self = MyIneq(myauxdata)
          % Jacobian for xmax - x_no_s.
          Jmax = sparse(zeros(2, length(x)));
          
-         Jmax(1:2, 1:2) = -eye(2);
+         Jmax(1:2, 1:2) = -sparse(eye(2));
          
          J = [Jmin; Jmax];
               
