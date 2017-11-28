@@ -155,22 +155,20 @@ setupOptizelle();
 %% Settings for testing
 % Toggle on/off if we want to replace infinites with numerical proxies
 % (applies only to the variables defined in this file).
-replaceInfs = 0;
+replaceInfs = 1;
 
 % Select which optimization we wish to do.
 usingUnconstrained = 0;
-usingConstrained = 0;
-usingEqualityConstrained = 1;
+usingConstrained = 1;
+usingEqualityConstrained = 0;
 usingInequalityConstrained = 0;
-
-% Select whether we want slack variables or not (only applies to MyEq for
-% now).
-withSlacks = 0;
+perturbZeros = 1; % perturb zeros in xmin and xmax.
+withSlacks = 1; % only applies to MyEq for now.
 
 %% Further problem settings and computation of (local) minimum.
 
 % Slack variable(s)
-s = zeros(ns * 2*nl, 1);
+s = zeros(ns * 2*nl, 1) + 1e-5;
 
 % Bounds on slack variable(s) smin .<= s (no upper bounds)
 smin = zeros(size(s));
@@ -182,6 +180,16 @@ if replaceInfs
    
    xmax(xmax == -Inf) = -1e10;
    xmax(xmax == Inf) = 1e10;  
+end
+
+if perturbZeros
+   % perturb zeros in xmin
+   zeroIndex = find(xmin == 0);
+   xmin(zeroIndex) = xmin(zeroIndex) + 1e-5;
+   
+   % perturb zeros in xmax
+   zeroIndex = find(xmax == 0);
+   xmax(zeroIndex) = xmax(zeroIndex) + 1e-5;
 end
 
 if withSlacks
@@ -266,10 +274,10 @@ myauxdata.lenx_no_s = length(x0); % length of x without slack variables.
 myauxdata.withSlacks = withSlacks;
 
 % Allocate memory for the equality multiplier
-y = zeros(ns*NEQ, 1);
+y = ones(ns*NEQ, 1);
 
 % Allocate memory for the inequality multiplier
-z = zeros(NINEQ, 1);
+z = ones(NINEQ, 1);
 
 if usingUnconstrained
    disp('Using Unconstrained...')
