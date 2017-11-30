@@ -162,34 +162,39 @@ usingUnconstrained = 0;
 usingConstrained = 1;
 usingEqualityConstrained = 0;
 usingInequalityConstrained = 0;
-perturbZeros = 1; % perturb zeros in xmin and xmax.
+perturbZerosInBounds = 1; % perturb zeros in xmin and xmax
+perturbZerosInSlacks = 1; 
 withSlacks = 1; % only applies to MyEq for now.
 
 %% Further problem settings and computation of (local) minimum.
 
 % Slack variable(s)
-s = zeros(ns * 2*nl, 1) + 1e-5;
+s = zeros(ns * 2*nl, 1);
 
 % Bounds on slack variable(s) smin .<= s (no upper bounds)
 smin = zeros(size(s));
 
 % Change from infinite bounds to finite bounds xmin .<= x .<= xmax.
 if replaceInfs
-   xmin(xmin == -Inf) = -1e10;
-   xmin(xmin == Inf) = 1e10;
+   xmin(xmin == -Inf) = -1e20;
+   xmin(xmin == Inf) = 1e20;
    
-   xmax(xmax == -Inf) = -1e10;
-   xmax(xmax == Inf) = 1e10;  
+   xmax(xmax == -Inf) = -1e20;
+   xmax(xmax == Inf) = 1e20;  
 end
 
-if perturbZeros
+if withSlacks && perturbZerosInSlacks
+   s = s + 1e-10;
+end
+
+if perturbZerosInBounds
    % perturb zeros in xmin
    zeroIndex = find(xmin == 0);
-   xmin(zeroIndex) = xmin(zeroIndex) + 1e-5;
+   xmin(zeroIndex) = xmin(zeroIndex) - 1e-10;
    
    % perturb zeros in xmax
    zeroIndex = find(xmax == 0);
-   xmax(zeroIndex) = xmax(zeroIndex) + 1e-5;
+   xmax(zeroIndex) = xmax(zeroIndex) + 1e-10;
 end
 
 if withSlacks
@@ -346,6 +351,15 @@ if usingConstrained || usingInequalityConstrained
    fns.h = MyIneq(myauxdata);
 end
 
+% state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
+% state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+% state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
+% state.y_diag = Optizelle.VectorSpaceDiagnostics.Basic;
+% state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+% state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+% state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;
+% state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+
 % Solve the optimization problem
 % tic
 if usingUnconstrained
@@ -373,6 +387,7 @@ elseif usingInequalityConstrained
 end
 
 % toc
+
 
 % Print out the reason for convergence
 fprintf('The algorithm converged due to: %s\n', ...

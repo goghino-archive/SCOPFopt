@@ -190,7 +190,7 @@ function main(fname)
     end
    
     % Generate an initial guess.
-    x0 = [-0.5; -0.5];
+    x0 = [0.5; 0.5];
    
     % Slack variables, corresponding to number of inequality constraints.
     s = zeros(2, 1) + 1e-5;
@@ -238,6 +238,7 @@ function main(fname)
     %Modify the state so that we just run our diagnostics and exit
 %     state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
 %     state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+%     state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 %     state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
 %     state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 %     state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;

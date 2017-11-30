@@ -29,13 +29,13 @@ mpc = loadcase('case9');
 % mpc = loadcase('case118');
 
 runExperiment1 = 1;
-runExperiment2 = 1;
+runExperiment2 = 0;
 
 %% Experiment 1.
 if runExperiment1
    %% Settings for experiment 1.
    % Toggle on/off to save plots.
-   savePlots = 1;
+   savePlots = 0;
    % Toggle on/off to save workspace.
    saveWorkspace = 0;
    % Toggle on/off to load workspace.
@@ -121,7 +121,7 @@ end
 if runExperiment2   
    %% Settings for experiment 2.
    % Toggle on/off to save plots.
-   savePlots = 1;
+   savePlots = 0;
    % Toggle on/off to save workspace.
    saveWorkspace = 0;
    % Toggle on/off to load workspace.
