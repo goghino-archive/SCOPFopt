@@ -24,9 +24,13 @@ elseif usingOptizelle
    mpopt = mpoption('opf.ac.solver', 'OPTIZELLE');
 end
 
+theCase = 'case9';
+% theCase = 'case118';
+
+fprintf('Testing with %s\n', theCase);
+
 % load MATPOWER case struct, see help caseformat
-mpc = loadcase('case9');
-% mpc = loadcase('case118');
+mpc = loadcase(theCase);
 
 runExperiment1 = 1;
 runExperiment2 = 0;
