@@ -15,6 +15,9 @@ if loadWorkspace
    load('-mat', workspaceName);
 else
    %% Do computations if necessary.
+%    cont = load('cont118.mat');
+%    cont = cont.cont;
+   
    contingencies = [];
    totalNumContingencies = 100;
    
@@ -50,7 +53,7 @@ else
       % TODO: Set SUCCESS to 0 if any exceptions arise.
       for numContingencies = lower:step:totalNumContingencies
          %         contingencies = lower:(lower + numContingencies - 1);
-         contingencies = ones(1, numContingencies)
+         contingencies = ones(1, numContingencies);
          
          [RESULTS, SUCCESS, info] = runscopf(mpc, contingencies, mpopt);
          

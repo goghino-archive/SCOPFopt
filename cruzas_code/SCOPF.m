@@ -32,7 +32,15 @@ fprintf('Testing with %s\n', theCase);
 % load MATPOWER case struct, see help caseformat
 mpc = loadcase(theCase);
 
-runExperiment1 = 1;
+% cont = load('cont118.mat');
+cont = [];
+if usingIPOPT
+   mpopt.ipopt.opts.tol = 1e-6;
+end
+
+[RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);
+
+runExperiment1 = 0;
 runExperiment2 = 0;
 
 %% Experiment 1.
@@ -51,18 +59,18 @@ if runExperiment1
    if untilConvergence
       if usingIPOPT
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/ipopt_exp1_conv_data.mat'];
+            'bachelor-project/saved_workspaces/ipopt_exp1_conv_data.mat'];
       elseif usingOptizelle
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/optizelle_exp1_conv_data.mat'];
+            'bachelor-project/saved_workspaces/optizelle_exp1_conv_data.mat'];
       end
    else
       if usingIPOPT
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/ipopt_exp1_maxiter_data.mat'];
+            'bachelor-project/saved_workspaces/ipopt_exp1_maxiter_data.mat'];
       elseif usingOptizelle
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/optizelle_exp1_maxiter_data.mat'];
+            'bachelor-project/saved_workspaces/optizelle_exp1_maxiter_data.mat'];
       end
    end
    
@@ -137,18 +145,18 @@ if runExperiment2
    if untilConvergence
       if usingIPOPT
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-         'bachelor-project/workspace/ipopt_exp2_conv_data.mat'];
+         'bachelor-project/saved_workspaces/ipopt_exp2_conv_data.mat'];
       elseif usingOptizelle
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-         'bachelor-project/workspace/optizelle_exp2_conv_data.mat'];
+         'bachelor-project/saved_workspaces/optizelle_exp2_conv_data.mat'];
       end
    else
       if usingIPOPT
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/ipopt_exp2_maxiter_data.mat'];
+            'bachelor-project/saved_workspaces/ipopt_exp2_maxiter_data.mat'];
       elseif usingOptizelle
          workspaceName = ['/Users/samuelcruz/Documents/GitHub/'...
-            'bachelor-project/workspace/optizelle_exp2_maxiter_data.mat'];
+            'bachelor-project/saved_workspaces/optizelle_exp2_maxiter_data.mat'];
       end
    end
    

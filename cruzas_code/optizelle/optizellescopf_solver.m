@@ -164,6 +164,7 @@ usingEqualityConstrained = 0;
 usingInequalityConstrained = 0;
 perturbZerosInBounds = 1; % perturb zeros in xmin and xmax
 perturbZerosInSlacks = 1; 
+perturbation = 1e-10;
 withSlacks = 1; % only applies to MyEq for now.
 
 %% Further problem settings and computation of (local) minimum.
@@ -184,17 +185,17 @@ if replaceInfs
 end
 
 if withSlacks && perturbZerosInSlacks
-   s = s + 1e-10;
+   s = s + perturbation;
 end
 
 if perturbZerosInBounds
    % perturb zeros in xmin
    zeroIndex = find(xmin == 0);
-   xmin(zeroIndex) = xmin(zeroIndex) - 1e-10;
+   xmin(zeroIndex) = xmin(zeroIndex) - perturbation;
    
    % perturb zeros in xmax
    zeroIndex = find(xmax == 0);
-   xmax(zeroIndex) = xmax(zeroIndex) + 1e-10;
+   xmax(zeroIndex) = xmax(zeroIndex) + perturbation;
 end
 
 if withSlacks
@@ -285,13 +286,13 @@ y = ones(ns*NEQ, 1);
 z = ones(NINEQ, 1);
 
 if usingUnconstrained
-   disp('Using Unconstrained...')
+   disp('Using Unconstrained problem...')
 elseif usingConstrained
-   disp('Using Constrained...')
+   disp('Using Constrained problem...')
 elseif usingEqualityConstrained
-   disp('Using EqualityConstrained...')
+   disp('Using EqualityConstrained problem...')
 elseif usingInequalityConstrained 
-   disp('Using InequalityConstrained...')
+   disp('Using InequalityConstrained problem...')
 end
 
 if withSlacks
@@ -302,6 +303,14 @@ if replaceInfs
    disp('Replacing Infs in xmin and xmax with numerical proxies...')
 end
    
+if perturbZerosInBounds
+   disp('Adding perturbation to 0s in xmin and xmax.')
+end
+
+if withSlacks && perturbZerosInSlacks
+   disp('Adding perturbation to 0s in slack variables.')
+end
+
 % No need to check if more than one selected since using if...elseif statements
 % below.
 
@@ -333,12 +342,17 @@ elseif usingEqualityConstrained
    
 elseif usingInequalityConstrained
    
+   % Create an optimization state
    state=Optizelle.InequalityConstrained.State.t( ...
       Optizelle.Rm,Optizelle.Rm,x,z);
    
    % Create a bundle of functions
    fns=Optizelle.InequalityConstrained.Functions.t;
 end
+
+% fname = 'tr_newton.json';
+% state = Optizelle.json.Constrained.read( ...
+%         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
 
 % Define bundle of functions.
 fns.f = MyObj(myauxdata);
@@ -351,12 +365,13 @@ if usingConstrained || usingInequalityConstrained
    fns.h = MyIneq(myauxdata);
 end
 
-% state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
-% state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+
+state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
+state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 % state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
 % state.y_diag = Optizelle.VectorSpaceDiagnostics.Basic;
-% state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-% state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 % state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;
 % state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 

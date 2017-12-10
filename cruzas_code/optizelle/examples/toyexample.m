@@ -41,6 +41,8 @@ function self = MyObj(myauxdata)
               cos(x(2));
               0;
               0];
+           
+%       grad = grad + myauxdata.error;
    end
     
    function hessvec = MyHessvec(x, dx, myauxdata)
@@ -52,6 +54,8 @@ function self = MyObj(myauxdata)
            0, 0, 0, 0;
            0, 0, 0, 0];
                  
+%       H = H + myauxdata.error;
+        
       hessvec = H * dx;
    end
 end
@@ -170,6 +174,7 @@ end
 
 % Actually runs the program
 function main(fname)
+   clc;
 
     % Grab the Optizelle library
     global Optizelle;
@@ -225,6 +230,9 @@ function main(fname)
     myauxdata.NEQ = NEQ;
     myauxdata.NINEQ = NINEQ;
     
+    % For testing how introducing an error affects diagnostics.
+    myauxdata.error = 1000;
+    
     % Create an optimization state
     state = Optizelle.Constrained.State.t( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,x,y,z);
@@ -236,11 +244,11 @@ function main(fname)
     end
     
     %Modify the state so that we just run our diagnostics and exit
-%     state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
-%     state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-%     state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+    state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
+    state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+    state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 %     state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
-%     state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+    state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 %     state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;
 %     state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 

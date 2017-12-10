@@ -21,10 +21,10 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       % Append constraints for xmin <= x <= xmax.
       xmin = myauxdata.xmin;
       xmax = myauxdata.xmax;
-   
-      constr = [x - xmin; 
-                xmax - x(1:myauxdata.lenx_no_s)];
-
+      
+      constr = [x - xmin;
+         xmax - x(1:myauxdata.lenx_no_s)];
+      
       %% Test for Inf, -Inf, and NaN in constr.
       if find(constr == Inf, 1)
          disp('MyIneq: Inf found in constr')
@@ -43,22 +43,31 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       lenx_no_s = myauxdata.lenx_no_s;
       
       % Append Jacobian for x - xmin >=0.
-      J = sparse(eye(length(x)));
+      J = speye(length(x));
       
-      Jmax = sparse(zeros(lenx_no_s, length(x)));
+      Jmax = sparse(lenx_no_s, length(x));
       Jmax(1:lenx_no_s, 1:lenx_no_s) = -eye(lenx_no_s);
-
+      
       % Append Jacobian for xmax - x (with no slacks) >= 0.
       J = [J; Jmax];
-     
+      
       dType = 0;
       if (size(d, 1) == size(x, 1))  % case: d == dx
          jvec = J * d;
          dType = 'dx';
+         
+%                f = @constraints;
+%                myEps = 1e+2;
+%          dx = d;
+%          stuff = (f(x-2 * myEps .* dx, myauxdata) - 8*f(x - myEps .* dx, myauxdata) + 8*f(x+myEps .* dx, myauxdata) - f(x+2 * myEps .* dx, myauxdata)) / (12*myEps)
+%          norm(stuff)
       elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz
          dType = 'dz';
          jvec = J' * d;
       end
+    
+      
+      
       
       %% Test for Inf, -Inf, and NaN in d.
       if find(d == Inf)
