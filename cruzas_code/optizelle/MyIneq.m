@@ -5,15 +5,12 @@ self.eval = @(x) constraints(x, myauxdata);
 
 % z=h'(x)dx
 self.p = @(x,dx) jacobvec(x, dx, myauxdata);
-% self.p = @(x,dz) 0;
 
 % xhat=h'(x)*dz
 self.ps = @(x,dz) jacobvec(x, dz, myauxdata);
-% self.ps = @(x,dz) 0;
 
 % xhat=(h''(x)dx)*dz
 self.pps = @(x,dx,dz) sparse(length(x),length(x));
-% self.pps = @(x,dx,dz) 0;
 
 
 % Helper functions.

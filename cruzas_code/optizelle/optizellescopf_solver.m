@@ -99,6 +99,10 @@ xl = xmax([VAopf VMopf(nPVbus_idx) QGopf PGopf(REFgen_idx)]); %local variables
 xg = xmax([VMopf(PVbus_idx) PGopf(nREFgen_idx)]); %global variables
 xmax = [repmat(xl, [ns, 1]); xg];
 
+idx = find(xmin==xmax);
+xmax(idx) = xmax(idx) + 1e-5;
+xmin(idx) = xmin(idx) - 1e-5;
+
 %% try to select an interior initial point based on bounds
 if mpopt.opf.init_from_mpc ~= 1
    ll = xmin; uu = xmax;
@@ -350,9 +354,9 @@ elseif usingInequalityConstrained
    fns=Optizelle.InequalityConstrained.Functions.t;
 end
 
-% fname = 'tr_newton.json';
-% state = Optizelle.json.Constrained.read( ...
-%         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
+fname = 'tr_newton.json';
+state = Optizelle.json.Constrained.read( ...
+        Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
 
 % Define bundle of functions.
 fns.f = MyObj(myauxdata);
@@ -366,12 +370,12 @@ if usingConstrained || usingInequalityConstrained
 end
 
 
-state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
-state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+% state.dscheme = Optizelle.DiagnosticScheme.DiagnosticsOnly;
+% state.f_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 % state.x_diag = Optizelle.VectorSpaceDiagnostics.Basic;
 % state.y_diag = Optizelle.VectorSpaceDiagnostics.Basic;
-state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
-state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+% state.g_diag = Optizelle.FunctionDiagnostics.SecondOrder;
+% state.h_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 % state.z_diag = Optizelle.VectorSpaceDiagnostics.EuclideanJordan;
 % state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 
