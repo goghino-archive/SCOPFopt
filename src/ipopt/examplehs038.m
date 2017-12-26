@@ -19,10 +19,18 @@ function [x, info] = examplehs038
   funcs.iterfunc         = @callback;
 
   % Set the IPOPT options.
-  options.ipopt.mu_strategy = 'adaptive';
-  options.ipopt.print_level = 0;
-  options.ipopt.tol         = 1e-7;
-  options.ipopt.max_iter    = 100;
+%   options.ipopt.mu_strategy = 'adaptive';
+%   options.ipopt.print_level = 5;
+%   options.ipopt.tol         = 1e-7;
+%   options.ipopt.max_iter    = 100;
+   options.ipopt.print_level                   = 5;
+   options.ipopt.print_timing_statistics       = 'yes';
+   options.ipopt.linear_solver                 = 'pardiso';
+   options.ipopt.pardiso_matching_strategy     = 'complete2x2';
+   options.ipopt.dual_inf_tol                  = 1e-6;
+   options.ipopt.compl_inf_tol                 = 1e-6;
+   options.ipopt.constr_viol_tol               = 1e-6;
+   options.ipopt.mu_strategy                   = 'monotone';
 
   % Run IPOPT.
   [x info] = ipopt(x0,funcs,options);

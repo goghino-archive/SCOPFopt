@@ -41,9 +41,10 @@ function main()
     state = Optizelle.Unconstrained.State.t( ...
         Optizelle.Rm, x);
 
+     fname = '/Users/samuelcruz/Documents/GitHub/SCOPFopt/cruzas_code/tr_newton.json';
     % Read the parameters from file
-%     state = Optizelle.json.Constrained.read( ...
-%         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
+    state = Optizelle.json.Unconstrained.read( ...
+        Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns = Optizelle.Unconstrained.Functions.t;
