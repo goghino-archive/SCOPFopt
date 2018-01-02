@@ -10,17 +10,15 @@ setenv('OMP_NUM_THREADS', '1')
 
 % Can only use one at a time.
 % REVIEW: Change this so that you can run experiments for both at once.
-usingIPOPT = 0;
-usingOptizelle = 1;
+usingIPOPT = 1;
+usingOptizelle = 0;
 
 % mpopt = mpoption('opf.ac.solver', 'MIPS', 'verbose', 2, 'mips.max_it', 100);
 
 if usingIPOPT
    % Path to save plots in.
-   pathToSavePlots = '/Users/samuelcruz/Documents/GitHub/bachelor-project/plots/ipopt/';
    mpopt = mpoption('opf.ac.solver', 'IPOPT', 'verbose', 2);
 elseif usingOptizelle
-   pathToSavePlots = '/Users/samuelcruz/Documents/GitHub/bachelor-project/plots/optizelle/';
    mpopt = mpoption('opf.ac.solver', 'OPTIZELLE');
 end
 

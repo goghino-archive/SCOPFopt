@@ -10,8 +10,14 @@ setenv('OMP_NUM_THREADS', '1')
 
 % Can only use one at a time.
 % TODO: Change this so that you can run experiments for both at once.
-usingIPOPT = 0;
-usingOptizelle = 1;
+usingIPOPT = 1;
+usingOptizelle = 0;
+
+if usingIPOPT
+   mpopt = mpoption('opf.ac.solver', 'IPOPT', 'verbose', 2);
+elseif usingOptizelle
+   mpopt = mpoption('opf.ac.solver', 'OPTIZELLE');
+end
 
 theCase = 'case9';
 fprintf('Testing with %s\n', theCase);
@@ -25,4 +31,8 @@ if usingIPOPT
    mpopt.ipopt.opts.tol = 1e-6;
 end
 
-[RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);
+for c = 1:length(cont)
+   subcont = cont(1:c);
+   
+   [RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);
+end
