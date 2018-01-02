@@ -10,8 +10,8 @@ setenv('OMP_NUM_THREADS', '1')
 
 % Can only use one at a time.
 % REVIEW: Change this so that you can run experiments for both at once.
-usingIPOPT = 1;
-usingOptizelle = 0;
+usingIPOPT = 0;
+usingOptizelle = 1;
 
 % mpopt = mpoption('opf.ac.solver', 'MIPS', 'verbose', 2, 'mips.max_it', 100);
 
@@ -36,7 +36,7 @@ mpc = loadcase(theCase);
 % cont = cont.cont;
 
 
-cont = [];
+cont = [2,3,5,6,8,9];
 if usingIPOPT
    mpopt.ipopt.opts.tol = 1e-6;
 end

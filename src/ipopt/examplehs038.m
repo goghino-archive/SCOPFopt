@@ -33,7 +33,9 @@ function [x, info] = examplehs038
    options.ipopt.mu_strategy                   = 'monotone';
 
   % Run IPOPT.
+  tic
   [x info] = ipopt(x0,funcs,options);
+  theTime = toc
 
 % ----------------------------------------------------------------------
 function f = objective (x)

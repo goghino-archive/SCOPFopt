@@ -34,26 +34,25 @@ function main()
     setupOptizelle();
 
     % Generate an initial guess 
-%     x = [-3, -1, -3, -1]; % This is not working...
     x = [-3; -1; -3; -1];
 
     % Create an optimization state
-    state = Optizelle.Unconstrained.State.t( ...
-        Optizelle.Rm, x);
+    state = Optizelle.Unconstrained.State.t(Optizelle.Rm, x);
 
      fname = '/Users/samuelcruz/Documents/GitHub/SCOPFopt/cruzas_code/tr_newton.json';
     % Read the parameters from file
-    state = Optizelle.json.Unconstrained.read( ...
-        Optizelle.Rm,fname,state);
+    state = Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
 
     % Create a bundle of functions
     fns = Optizelle.Unconstrained.Functions.t;
     fns.f = MyObj();
 
     % Solve the optimization problem
+    tic
     state = Optizelle.Unconstrained.Algorithms.getMin( ...
         Optizelle.Rm, Optizelle.Messaging.stdout, ...
         fns,state);
+    theTime = toc
 
     % Print out the reason for convergence
     fprintf('The algorithm converged due to: %s\n', ...
