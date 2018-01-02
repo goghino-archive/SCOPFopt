@@ -10,8 +10,8 @@ setenv('OMP_NUM_THREADS', '1')
 
 % Can only use one at a time.
 % TODO: Change this so that you can run experiments for both at once.
-usingIPOPT = 1;
-usingOptizelle = 0;
+usingIPOPT = 0;
+usingOptizelle = 1;
 
 if usingIPOPT
    mpopt = mpoption('opf.ac.solver', 'IPOPT', 'verbose', 2);
@@ -25,14 +25,19 @@ fprintf('Testing with %s\n', theCase);
 % load MATPOWER case struct, see help caseformat
 mpc = loadcase(theCase);
 
-cont = [2,3,5,6,8,9];
+% cont = [2,3,5,6,8,9];
+cont = [];
 
 if usingIPOPT
    mpopt.ipopt.opts.tol = 1e-6;
 end
 
-for c = 1:length(cont)
-   subcont = cont(1:c);
+for c = 0:length(cont)
+   if (c == 0)
+      subcont = [];
+   else
+      subcont = cont(1:c);
+   end
    
    [RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);
 end
