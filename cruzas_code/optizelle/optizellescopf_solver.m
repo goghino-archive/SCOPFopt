@@ -426,7 +426,8 @@ fprintf('The algorithm converged due to: %s\n', ...
 
 % raw = struct('info', info.status, 'meta', meta, 'numIter', info.iter, 'overallAlgorithm', info.cpu);
 % results = struct('f', f, 'x', x);
-raw = struct('meta', meta, 'overallAlgorithm', timeOptizelle);
+
+raw = struct('meta', meta, 'numIter', state.iter, 'overallAlgorithm', timeOptizelle);
 results = struct('x', state.x);
 success = 1;
 end
