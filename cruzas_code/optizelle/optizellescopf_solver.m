@@ -355,6 +355,8 @@ elseif usingInequalityConstrained
 end
 
 fname = 'tr_newton.json';
+
+% TODO: change this to work in all cases, not just constrained.
 state = Optizelle.json.Constrained.read( ...
         Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,fname,state);
 
@@ -380,33 +382,39 @@ end
 % state.L_diag = Optizelle.FunctionDiagnostics.SecondOrder;
 
 % Solve the optimization problem
-% tic
+
+timeOptizelle = -1;
 if usingUnconstrained
 
+   tic;
     state = Optizelle.Unconstrained.Algorithms.getMin( ...
         Optizelle.Rm, Optizelle.Messaging.stdout, ...
         fns,state);
-   
+   timeOptizelle = toc;
+     
 elseif usingConstrained
    
+   tic;
    state = Optizelle.Constrained.Algorithms.getMin( ...
       Optizelle.Rm,Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
       fns,state);
+   timeOptizelle = toc;
    
 elseif usingEqualityConstrained
    
+   tic;
    state = Optizelle.EqualityConstrained.Algorithms.getMin( ...
       Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout, ...
       fns,state);
+   timeOptizelle = toc;
    
 elseif usingInequalityConstrained
    
+   tic;
    state = Optizelle.InequalityConstrained.Algorithms.getMin( ...
       Optizelle.Rm,Optizelle.Rm,Optizelle.Messaging.stdout,fns,state);
+   timeOptizelle = toc;
 end
-
-% toc
-
 
 % Print out the reason for convergence
 fprintf('The algorithm converged due to: %s\n', ...
@@ -415,10 +423,10 @@ fprintf('The algorithm converged due to: %s\n', ...
 % TODO: Figure out exactly what to return in results, success, and raw.
 % TODO: in raw, make sure you put the time taken by the algorithm.
 % Check line 389 of ipoptscopf_solver.
-raw = struct('meta', meta);
-results = struct('x', state.x);
-success = 1;
 
 % raw = struct('info', info.status, 'meta', meta, 'numIter', info.iter, 'overallAlgorithm', info.cpu);
 % results = struct('f', f, 'x', x);
+raw = struct('meta', meta, 'overallAlgorithm', timeOptizelle);
+results = struct('x', state.x);
+success = 1;
 end

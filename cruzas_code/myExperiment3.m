@@ -41,9 +41,9 @@ for rep = 1:numRepetitions
       
       subcont
       
-      [RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);      
+      [RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);
       
-      avgNumIter(c+1) = avgNumIter(c+1) + info.numIter;
+      % avgNumIter(c+1) = avgNumIter(c+1) + info.numIter;
       avgTime(c+1) = avgTime(c+1) + info.overallAlgorithm;
    end
 end
