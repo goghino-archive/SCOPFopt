@@ -8,8 +8,6 @@ define_constants;
 
 setenv('OMP_NUM_THREADS', '1')
 
-numRepetitions = 10;
-
 % Can only use one at a time.
 % TODO: Change this so that you can run experiments for both at once.
 usingIPOPT = 0;
@@ -28,9 +26,14 @@ fprintf('Testing with %s\n', theCase);
 mpc = loadcase(theCase);
 
 cont = [2,3,5,6,8,9];
+if usingIPOPT
+   mpopt.ipopt.opts.tol = 1e-6;
+end
 
 avgNumIter = zeros(1, length(cont) + 1, 1);
 avgTime = zeros(1, length(cont) + 1);
+
+numRepetitions = 5;
 for rep = 1:numRepetitions
    for c = 0:length(cont)
       if (c == 0)
@@ -41,7 +44,7 @@ for rep = 1:numRepetitions
       
       subcont
       
-      [RESULTS, SUCCESS, info] = runscopf(mpc, cont, mpopt);
+      [RESULTS, SUCCESS, info] = runscopf(mpc, subcont, mpopt);
       
       avgNumIter(c+1) = avgNumIter(c+1) + info.numIter;
       avgTime(c+1) = avgTime(c+1) + info.overallAlgorithm;
