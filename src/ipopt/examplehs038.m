@@ -33,10 +33,20 @@ function [x, info] = examplehs038
    options.ipopt.mu_strategy                   = 'monotone';
 
   % Run IPOPT.
-  tic
-  [x info] = ipopt(x0,funcs,options);
-  theTime = toc
-
+  numRepetitions = 10;
+  avgTime = 0;
+  avgNumIter = 0;
+  for i = 1:numRepetitions
+     [x info] = ipopt(x0, funcs, options);
+     
+     avgTime = avgTime + info.cpu;
+     avgNumIter = avgNumIter + info.iter;
+  end
+  
+  avgTime = avgTime / numRepetitions
+  avgNumIter = avgNumIter / numRepetitions
+  avgTimePerIter = avgTime / avgNumIter
+  
 % ----------------------------------------------------------------------
 function f = objective (x)
   f = 100*(x(2)-x(1)^2)^2 + (1-x(1))^2 + 90*(x(4)-x(3)^2)^2 + (1-x(3))^2 + ...

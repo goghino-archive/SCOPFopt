@@ -12,7 +12,6 @@ self.ps = @(x,dy) jacobvec(x, dy, myauxdata);
 
 % xhat=(g''(x)dx)*dy
 self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
-% self.pps = @(x,dx,dy) 0;
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -209,7 +208,6 @@ self.pps = @(x,dx,dy) hessian(x, myauxdata, dy) * dx;
       [VAscopf, VMscopf, PGscopf, QGscopf] = model.index.getLocalIndicesSCOPF(mpc);
       [VAopf, VMopf, PGopf, QGopf] = model.index.getLocalIndicesOPF(mpc);
       
-      % REVIEW: is this correct?
       sigma = 0;
       
       for i = 0:ns-1

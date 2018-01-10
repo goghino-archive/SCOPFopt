@@ -1,4 +1,4 @@
-%% Define inequalities.
+%% Define inequality constraints.
 function self = MyIneq(myauxdata)
 % z=h(x)
 self.eval = @(x) constraints(x, myauxdata);
@@ -11,7 +11,6 @@ self.ps = @(x,dz) jacobvec(x, dz, myauxdata);
 
 % xhat=(h''(x)dx)*dz
 self.pps = @(x,dx,dz) sparse(length(x),length(x));
-
 
 % Helper functions.
    function constr = constraints(x, myauxdata)
@@ -52,19 +51,10 @@ self.pps = @(x,dx,dz) sparse(length(x),length(x));
       if (size(d, 1) == size(x, 1))  % case: d == dx
          jvec = J * d;
          dType = 'dx';
-         
-%                f = @constraints;
-%                myEps = 1e+2;
-%          dx = d;
-%          stuff = (f(x-2 * myEps .* dx, myauxdata) - 8*f(x - myEps .* dx, myauxdata) + 8*f(x+myEps .* dx, myauxdata) - f(x+2 * myEps .* dx, myauxdata)) / (12*myEps)
-%          norm(stuff)
       elseif (size(d, 1) == myauxdata.NINEQ) % case: d == dz
          dType = 'dz';
          jvec = J' * d;
       end
-    
-      
-      
       
       %% Test for Inf, -Inf, and NaN in d.
       if find(d == Inf)
