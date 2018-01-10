@@ -1,7 +1,21 @@
 % Optimize a simple optimization problem.
 function examplehs038_optizelle()
 % Execute the optimization
-main();
+numRepetitions = 10;
+avgTime = 0;
+avgNumIter = 0;
+
+for i = 1:numRepetitions
+   [myTime, iter] = main();
+   
+   avgTime = avgTime + myTime;
+   avgNumIter = avgNumIter + iter;
+end
+
+avgTime = avgTime / numRepetitions
+avgNumIter = avgNumIter / numRepetitions
+avgTimePerIter = avgTime / avgNumIter
+
 end
 
 % Define a simple objective.
@@ -27,7 +41,7 @@ self.hessvec = @(x,dx) [
 end
 
 % Actually runs the program
-function main()
+function [myTime, iter] = main()
 
 % Grab the Optizelle library
 global Optizelle;
@@ -47,35 +61,21 @@ state = Optizelle.json.Unconstrained.read(Optizelle.Rm,fname,state);
 fns = Optizelle.Unconstrained.Functions.t;
 fns.f = MyObj();
 
-numRepetitions = 10;
-avgTime = 0;
-avgNumIter = 0;
+% Solve the optimization problem
+tic
+state = Optizelle.Unconstrained.Algorithms.getMin( ...
+   Optizelle.Rm, Optizelle.Messaging.stdout, ...
+   fns,state);
+myTime = toc;
 
-for i = 1:numRepetitions
-   % Solve the optimization problem
-   tic
-   state = Optizelle.Unconstrained.Algorithms.getMin( ...
-      Optizelle.Rm, Optizelle.Messaging.stdout, ...
-      fns,state);
-   theTime = toc;
-   
-   % Print out the reason for convergence
-   fprintf('The algorithm converged due to: %s\n', ...
-      Optizelle.OptimizationStop.to_string(state.opt_stop));
-   
-   % Print out the final answer
-   fprintf('The optimal point is: (%e,%e,%e,%e)\n', state.x(1), state.x(2), ...
-      state.x(3), state.x(4));
-   
-   avgTime = avgTime + theTime;
-   avgNumIter = avgNumIter + state.iter;
-end
+% Print out the reason for convergence
+fprintf('The algorithm converged due to: %s\n', ...
+   Optizelle.OptimizationStop.to_string(state.opt_stop));
 
-avgTime = avgTime / numRepetitions
-avgNumIter = avgNumIter / numRepetitions
-avgTimePerIter = avgTime / avgNumIter
+% Print out the final answer
+fprintf('The optimal point is: (%e,%e,%e,%e)\n', state.x(1), state.x(2), ...
+   state.x(3), state.x(4));
 
-% Write out the final answer to file
-%     Optizelle.json.Constrained.write_restart(Optizelle.Rm, 'solution.json', ...
-%                                              state);
+iter = state.iter;
+
 end
