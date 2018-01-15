@@ -33,7 +33,7 @@ function [x, info] = examplehs038
    options.ipopt.mu_strategy                   = 'monotone';
 
   % Run IPOPT.
-  numRepetitions = 10;
+  numRepetitions = 50;
   avgTime = 0;
   avgNumIter = 0;
   for i = 1:numRepetitions

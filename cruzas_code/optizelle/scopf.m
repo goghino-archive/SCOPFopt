@@ -162,16 +162,20 @@ for i = 1:ns
     %g(x) = 0, g(x) = V .* conj(Ybus * V) - Sbus;
     err = find(abs(gn_local) > TOL_EQ);
     if (~isempty(err))
-        switch alg
-           case 'IPOPT'
-              error('violated PF equations %e', max(abs(gn_local(err))));
-           case 'OPTIZELLE'
-              disp('should be here')
-              fprintf('violated PF equations %e', max(abs(gn_local(err))));
-              return
-           otherwise
-              error('violated PF equations %e', max(abs(gn_local(err))));
-        end
+       error('violated PF equations %e', max(abs(gn_local(err))));
+       
+       % Below is code that was used to gather results, mainly to skip
+       % errors thrown when using Optizelle.
+%         switch alg
+%            case 'IPOPT'
+%               error('violated PF equations %e', max(abs(gn_local(err))));
+%            case 'OPTIZELLE'
+%               disp('should be here')
+%               fprintf('violated PF equations %e', max(abs(gn_local(err))));
+%               return
+%            otherwise
+%               error('violated PF equations %e', max(abs(gn_local(err))));
+%         end
     end
     
     %h(x) <= 0, h(x) = Sf .* conj(Sf) - flow_max.^2

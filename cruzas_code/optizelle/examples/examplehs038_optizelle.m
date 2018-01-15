@@ -1,7 +1,7 @@
 % Optimize a simple optimization problem.
 function examplehs038_optizelle()
 % Execute the optimization
-numRepetitions = 10;
+numRepetitions = 50;
 avgTime = 0;
 avgNumIter = 0;
 
